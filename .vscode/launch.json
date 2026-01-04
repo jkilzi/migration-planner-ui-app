@@ -5,6 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug (stage w/dev-proxy)",
+            "request": "launch",
+            "type": "node-terminal",
+            "command": "npm run start:dev-proxy",
+            "cwd": "${workspaceFolder}",
+            "serverReadyAction": {
+                "action": "debugWithChrome",
+                "killOnServerStop": true,
+                "pattern": "App should run on:",
+                "uriFormat": "https://stage.foo.redhat.com:1337/openshift/migration-assessment/",
+            }
+        },
+        {
             "name": "Debug (stage)",
             "request": "launch",
             "type": "node-terminal",
