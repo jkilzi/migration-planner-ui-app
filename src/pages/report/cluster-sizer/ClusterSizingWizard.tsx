@@ -1,0 +1,155 @@
+import React, { useCallback, useState } from 'react';
+
+import {
+  Modal,
+  Wizard,
+  WizardHeader,
+  WizardStep
+} from '@patternfly/react-core';
+
+import { fetchMockClusterRequirements } from './mocks/data.mock';
+import { DEFAULT_FORM_VALUES, WORKER_NODE_PRESETS } from './constants';
+import { SizingInputForm } from './SizingInputForm';
+import { SizingInputFormWizardStepFooter } from './SizingInputFormWizardStepFooter';
+import { SizingResult } from './SizingResult';
+import { SizingResultWizardStepFooter } from './SizingResultWizardStepFooter';
+import type {
+  ClusterRequirementsRequest,
+  ClusterRequirementsResponse,
+  SizingFormValues,
+} from './types';
+import { formValuesToRequest } from './types';
+
+interface ClusterSizingWizardProps {
+  isOpen: boolean;
+  onClose: () => void;
+  clusterName: string;
+  clusterId: string;
+  /** Assessment ID for the API endpoint */
+  assessmentId: string;
+  /** Optional: function to call the sizer API */
+  onCalculate?: (
+    assessmentId: string,
+    request: ClusterRequirementsRequest,
+  ) => Promise<ClusterRequirementsResponse>;
+}
+
+export const ClusterSizingWizard: React.FC<ClusterSizingWizardProps> = ({
+  isOpen,
+  onClose,
+  clusterName,
+  clusterId,
+  assessmentId,
+  onCalculate,
+}) => {
+  const [formValues, setFormValues] =
+    useState<SizingFormValues>(DEFAULT_FORM_VALUES);
+  const [sizerOutput, setSizerOutput] =
+    useState<ClusterRequirementsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const handleClose = useCallback(() => {
+    // Reset state when closing
+    setFormValues(DEFAULT_FORM_VALUES);
+    setSizerOutput(null);
+    setError(null);
+    setIsLoading(false);
+    onClose();
+  }, [onClose]);
+
+  // TODO(jkilzi): Integrate with backend API
+  const handleCalculate = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Get worker node CPU and memory based on preset or custom values
+      const workerCpu =
+        formValues.workerNodePreset !== 'custom'
+          ? WORKER_NODE_PRESETS[formValues.workerNodePreset].cpu
+          : formValues.customCpu;
+      const workerMemory =
+        formValues.workerNodePreset !== 'custom'
+          ? WORKER_NODE_PRESETS[formValues.workerNodePreset].memoryGb
+          : formValues.customMemoryGb;
+
+      // Build the API request payload
+      const request = formValuesToRequest(
+        clusterId,
+        formValues,
+        workerCpu,
+        workerMemory,
+      );
+
+      let result: ClusterRequirementsResponse;
+
+      if (onCalculate) {
+        // Use provided API function
+        // POST /api/v1/assessments/{id}/cluster-requirements
+        result = await onCalculate(assessmentId, request);
+      } else {
+        // Use mock data for development
+        result = await fetchMockClusterRequirements(formValues);
+      }
+
+      setSizerOutput(result);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err : new Error('Failed to calculate sizing'),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [assessmentId, clusterId, formValues, onCalculate]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      aria-label="Cluster sizing wizard modal"
+      onEscapePress={handleClose}
+      variant="large"
+    >
+      <Wizard
+        height={600}
+        onClose={handleClose}
+        header={<WizardHeader onClose={handleClose} title="Target cluster recommendations" />}>
+        <WizardStep
+          name="Migration preferences"
+          id="preferences-step"
+          footer={
+            <SizingInputFormWizardStepFooter
+              onClose={handleClose}
+              onCalculate={handleCalculate}
+              isLoading={isLoading}
+            />
+          }
+        >
+          <SizingInputForm values={formValues} onChange={setFormValues} />
+        </WizardStep>
+
+        <WizardStep
+          name="Review cluster recommendations"
+          id="review-step"
+          footer={<SizingResultWizardStepFooter onClose={handleClose} />}
+        >
+          <SizingResult
+            clusterName={clusterName}
+            formValues={formValues}
+            sizerOutput={sizerOutput}
+            isLoading={isLoading}
+            error={error}
+          />
+        </WizardStep>
+      </Wizard>
+    </Modal>
+  );
+};
+
+ClusterSizingWizard.displayName = 'ClusterSizingWizard';
+
+export default ClusterSizingWizard;
