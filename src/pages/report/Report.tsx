@@ -32,7 +32,6 @@ import { useDiscoverySources } from '../../migration-wizard/contexts/discovery-s
 import { Provider as DiscoverySourcesProvider } from '../../migration-wizard/contexts/discovery-sources/Provider';
 import { EnhancedDownloadButton } from '../../migration-wizard/steps/discovery/EnhancedDownloadButton';
 import { ExportError, SnapshotLike } from '../../services/report-export/types';
-import { openAssistedInstaller } from '../assessment/utils/functions';
 import { parseLatestSnapshot } from '../assessment/utils/snapshotParser';
 import { AgentStatusView } from '../environment/sources-table/AgentStatusView';
 
@@ -41,6 +40,7 @@ import {
   ClusterOption,
 } from './assessment-report/clusterView';
 import { Dashboard } from './assessment-report/Dashboard';
+import { ClusterSizingWizard } from './cluster-sizer/ClusterSizingWizard';
 
 type AssessmentLike = {
   id: string | number;
@@ -56,6 +56,7 @@ const Inner: React.FC = () => {
   const [exportError, setExportError] = useState<ExportError | null>(null);
   const [selectedClusterId, setSelectedClusterId] = useState<string>('all');
   const [isClusterSelectOpen, setIsClusterSelectOpen] = useState(false);
+  const [isSizingWizardOpen, setIsSizingWizardOpen] = useState(false);
 
   useMount(async () => {
     if (
@@ -340,11 +341,17 @@ const Inner: React.FC = () => {
                 }`}
               />
             </SplitItem>
-            <SplitItem>
-              <Button variant="primary" onClick={openAssistedInstaller}>
-                Create a target cluster
-              </Button>
-            </SplitItem>
+
+            {selectedClusterId !== 'all' ? (
+              <SplitItem>
+                <Button
+                  variant="primary"
+                  onClick={() => setIsSizingWizardOpen(true)}
+                >
+                  View target cluster recommendations
+                </Button>
+              </SplitItem>
+            ) : null}
           </Split>
         ) : undefined
       }
@@ -370,6 +377,14 @@ const Inner: React.FC = () => {
           </Content>
         </Bullseye>
       )}
+
+      <ClusterSizingWizard
+        isOpen={isSizingWizardOpen}
+        onClose={() => setIsSizingWizardOpen(false)}
+        clusterName={clusterView.selectionLabel}
+        clusterId={selectedClusterId}
+        assessmentId={id || ''}
+      />
     </AppPage>
   );
 };

@@ -2,7 +2,9 @@
 
 # vscode config
 # .vscode/*
-.cursor/**/*
+.cursor/*
+!.cursor/plans/
+!.cursor/plans/**
 
 
 # ide config
