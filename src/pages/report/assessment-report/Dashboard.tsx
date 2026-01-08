@@ -182,22 +182,36 @@ export const Dashboard: React.FC<Props> = ({
                   exportAllViews={exportAllViews}
                 />
               </GalleryItem>
+              <GalleryItem>
+                <NetworkOverview
+                  infra={infra}
+                  nicCount={vms.nicCount}
+                  distributionByNicCount={vms.distributionByNicCount}
+                  isExportMode={isExportMode}
+                  exportAllViews={exportAllViews}
+                />
+              </GalleryItem>
             </Gallery>
           </GridItem>
         )}
-        <GridItem span={12} data-export-block={isExportMode ? '4' : undefined}>
-          <Gallery hasGutter minWidths={{ default: '300px', md: '45%' }}>
-            <GalleryItem>
-              <NetworkOverview
-                infra={infra}
-                nicCount={vms.nicCount}
-                distributionByNicCount={vms.distributionByNicCount}
-                isExportMode={isExportMode}
-                exportAllViews={exportAllViews}
-              />
-            </GalleryItem>
-          </Gallery>
-        </GridItem>
+        {isAggregateView && (
+          <GridItem
+            span={12}
+            data-export-block={isExportMode ? '4a' : undefined}
+          >
+            <Gallery hasGutter minWidths={{ default: '300px', md: '45%' }}>
+              <GalleryItem>
+                <NetworkOverview
+                  infra={infra}
+                  nicCount={vms.nicCount}
+                  distributionByNicCount={vms.distributionByNicCount}
+                  isExportMode={isExportMode}
+                  exportAllViews={exportAllViews}
+                />
+              </GalleryItem>
+            </Gallery>
+          </GridItem>
+        )}
         <GridItem span={12} data-export-block={isExportMode ? '5' : undefined}>
           <Gallery hasGutter minWidths={{ default: '300px', md: '45%' }}>
             <GalleryItem>
