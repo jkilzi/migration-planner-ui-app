@@ -15,7 +15,6 @@ import {
   Bullseye,
   Button,
   Content,
-  Icon,
   MenuToggle,
   MenuToggleElement,
   Select,
@@ -27,8 +26,6 @@ import {
   Stack,
   StackItem,
 } from '@patternfly/react-core';
-import { CheckCircleIcon } from '@patternfly/react-icons';
-import { t_global_color_status_success_default as globalSuccessColor100 } from '@patternfly/react-tokens/dist/js/t_global_color_status_success_default';
 
 import { AppPage } from '../../components/AppPage';
 import { useDiscoverySources } from '../../migration-wizard/contexts/discovery-sources/Context';
@@ -37,6 +34,7 @@ import { EnhancedDownloadButton } from '../../migration-wizard/steps/discovery/E
 import { ExportError, SnapshotLike } from '../../services/report-export/types';
 import { openAssistedInstaller } from '../assessment/utils/functions';
 import { parseLatestSnapshot } from '../assessment/utils/snapshotParser';
+import { AgentStatusView } from '../environment/sources-table/AgentStatusView';
 
 import {
   buildClusterViewModel,
@@ -46,7 +44,9 @@ import { Dashboard } from './assessment-report/Dashboard';
 
 type AssessmentLike = {
   id: string | number;
+  sourceId?: string;
   name?: string;
+  sourceType?: string;
   snapshots?: SnapshotLike[];
 };
 
@@ -146,6 +146,11 @@ const Inner: React.FC = () => {
 
   const clusterSelectDisabled = clusterView.clusterOptions.length <= 1;
 
+  const source = assessment.sourceId
+    ? discoverySourcesContext.getSourceById(assessment.sourceId)
+    : undefined;
+  const agent = source?.agent;
+
   const handleClusterSelect = (
     _event: React.MouseEvent<Element, MouseEvent> | undefined,
     value: string | number | undefined,
@@ -190,13 +195,32 @@ const Inner: React.FC = () => {
       caption={
         <Stack>
           <StackItem>
-            Discovery VM status:{' '}
-            <Icon size="md" isInline>
-              <CheckCircleIcon color={globalSuccessColor100.value} />
-            </Icon>{' '}
-            Connected
+            {assessment.sourceType === 'rvtools' ? (
+              'Source: RVTools file upload'
+            ) : (
+              <Split hasGutter>
+                <SplitItem isFilled={false}>Discovery VM status:</SplitItem>
+                <SplitItem isFilled={false}>
+                  <AgentStatusView
+                    status={agent ? agent.status : 'not-connected'}
+                    statusInfo={
+                      source?.onPremises && source?.inventory !== undefined
+                        ? undefined
+                        : agent
+                          ? agent.statusInfo
+                          : 'Not connected'
+                    }
+                    credentialUrl={agent ? agent.credentialUrl : ''}
+                    uploadedManually={Boolean(
+                      source?.onPremises && source?.inventory !== undefined,
+                    )}
+                    updatedAt={source?.updatedAt as unknown as string}
+                    disableInteractions
+                  />
+                </SplitItem>
+              </Split>
+            )}
           </StackItem>
-
           <StackItem>
             <p>
               Presenting the information we were able to fetch from the
