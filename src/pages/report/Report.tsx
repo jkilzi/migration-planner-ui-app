@@ -188,11 +188,11 @@ const Inner: React.FC = () => {
         {
           key: 3,
           to: '#',
-          children: `${assessment.name || `Assessment ${id}`} report`,
+          children: `${assessment.name || `Assessment ${id}`} - vCenter report`,
           isActive: true,
         },
       ]}
-      title={`${assessment.name || `Assessment ${id}`} report`}
+      title={`${assessment.name || `Assessment ${id}`} - vCenter report`}
       caption={
         <Stack>
           <StackItem>
@@ -327,7 +327,7 @@ const Inner: React.FC = () => {
                 }
                 sourceData={discoverySourcesContext.sourceSelected as Source}
                 snapshot={last}
-                documentTitle={`${assessment.name || `Assessment ${id}`}${
+                documentTitle={`${assessment.name || `Assessment ${id}`} - vCenter report${
                   clusterView.isAggregateView
                     ? ''
                     : ` - ${clusterView.selectionLabel}`

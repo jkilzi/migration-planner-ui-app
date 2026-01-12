@@ -539,11 +539,11 @@ const ExampleReport: React.FC = () => {
         {
           key: 3,
           to: '#',
-          children: 'Example Report',
+          children: 'Example - vCenter report',
           isActive: true,
         },
       ]}
-      title="Example Report"
+      title="Example - vCenter report"
       caption={
         <>
           Discovery VM status :{' '}
