@@ -92,6 +92,10 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
   // Helper to check if job is processing
   const isJobProcessing = job && !TERMINAL_JOB_STATUSES.includes(job.status);
 
+  // Helper to check if file operations should be disabled (RVTools mode during job creation/processing)
+  const isFileOperationsDisabled =
+    mode === 'rvtools' && (isLoading || isJobProcessing);
+
   // Derive error from job failure
   const jobError = React.useMemo(() => {
     return job?.status === JobStatus.Failed
@@ -175,6 +179,11 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
     _event: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLElement>,
     file: File,
   ): void => {
+    // Prevent file changes during RVTools job creation/processing
+    if (isFileOperationsDisabled) {
+      return;
+    }
+
     setFileErrorDismissed(true);
 
     const maxSize = 52428800; // 50 MiB
@@ -208,6 +217,11 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
   };
 
   const handleFileClear = (): void => {
+    // Prevent file clearing during RVTools job creation/processing
+    if (isFileOperationsDisabled) {
+      return;
+    }
+
     setSelectedFile(null);
     setFilename('');
     setFileValidationError('');
@@ -283,12 +297,7 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
     >
       Create Migration Assessment
     </Button>,
-    <Button
-      key="cancel"
-      variant="link"
-      onClick={handleClose}
-      isDisabled={isLoading && !isJobProcessing}
-    >
+    <Button key="cancel" variant="link" onClick={handleClose}>
       Cancel
     </Button>,
     isJobProcessing && job && (
@@ -409,6 +418,7 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
               validated={fileValidationError ? 'error' : 'default'}
               accept={config.accept}
               hideDefaultPreview
+              isDisabled={isFileOperationsDisabled}
             />
             {fileValidationError && (
               <FormHelperText>
