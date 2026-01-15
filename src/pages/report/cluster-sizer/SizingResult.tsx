@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 
 import {
+  Alert,
   Button,
   Content,
   Flex,
@@ -18,6 +19,9 @@ import { CopyIcon } from '@patternfly/react-icons';
 
 import { OVERCOMMIT_OPTIONS } from './constants';
 import type { ClusterRequirementsResponse, SizingFormValues } from './types';
+
+const DISCLAIMER_TEXT =
+  'Note: Resource requirements are estimates based on current workloads. Please verify this architecture with your SME team to ensure optimal performance.';
 
 interface SizingResultProps {
   clusterName: string;
@@ -75,6 +79,8 @@ Resource Breakdown
 VM Resources (requested): ${formatNumber(output.inventoryTotals.totalCPU)} CPU / ${formatNumber(output.inventoryTotals.totalMemory)} GB
 With Over-commit (limits): ${formatNumber(cpuLimits)} CPU / ${formatNumber(memoryLimits)} GB
 Physical Capacity: ${formatNumber(output.clusterSizing.totalCPU)} CPU / ${formatNumber(output.clusterSizing.totalMemory)} GB
+
+${DISCLAIMER_TEXT}
 `.trim();
 };
 
@@ -180,6 +186,10 @@ export const SizingResult: React.FC<SizingResultProps> = ({
         <PanelMainBody>
           <Stack hasGutter>
             {/* Main cluster info */}
+
+            <StackItem>
+              <Alert isInline variant="info" title={DISCLAIMER_TEXT} />
+            </StackItem>
             <StackItem>
               <Content>
                 <Content>
