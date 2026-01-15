@@ -749,7 +749,7 @@ const ExampleReport: React.FC = () => {
           <Icon size="md" isInline>
             <CheckCircleIcon color={globalSuccessColor100.value} />
           </Icon>{' '}
-          Connected
+          Ready
           <br />
           This is an example report showcasing the migration assessment
           dashboard
