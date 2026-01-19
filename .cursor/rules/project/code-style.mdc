@@ -14,3 +14,4 @@ alwaysApply: false
 - Use `@emotion/css` for styling when needed, avoid generating plain css/scss files
 - Routing: `react-router-dom` with BrowserRouter
 - Destructure imports when possible: `import { Button } from '@patternfly/react-core'`
+- **PatternFly Button with Tooltip**: When a button needs to be disabled AND have a tooltip, use `isAriaDisabled` instead of `isDisabled`. Normal disabled buttons cannot receive focus and therefore cannot display tooltips. See [PatternFly Button aria-disabled examples](https://www.patternfly.org/components/button#aria-disabled-examples)

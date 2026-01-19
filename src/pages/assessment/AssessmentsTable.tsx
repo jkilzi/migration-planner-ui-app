@@ -543,7 +543,7 @@ export const AssessmentsTable: React.FC<Props> = ({
                         />
                       }
                       style={{ padding: 0 }}
-                      isDisabled={!row.hasData}
+                      isAriaDisabled={!row.hasData}
                       onClick={() =>
                         navigate(
                           `/openshift/migration-assessment/assessments/${row.id}/report`,

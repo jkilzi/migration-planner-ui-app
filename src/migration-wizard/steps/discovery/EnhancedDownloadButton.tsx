@@ -38,6 +38,7 @@ interface EnhancedDownloadButtonProps {
   snapshot?: SnapshotLike;
   documentTitle?: string;
   onError?: (error: ExportError) => void;
+  isDisabled?: boolean;
 }
 
 export const EnhancedDownloadButton: React.FC<EnhancedDownloadButtonProps> = ({
@@ -47,6 +48,7 @@ export const EnhancedDownloadButton: React.FC<EnhancedDownloadButtonProps> = ({
   snapshot,
   documentTitle,
   onError,
+  isDisabled = false,
 }): JSX.Element => {
   const reportExportService = useInjection<ReportExportService>(
     Symbols.ReportExportService,
@@ -145,7 +147,7 @@ export const EnhancedDownloadButton: React.FC<EnhancedDownloadButtonProps> = ({
           onClick={onToggleClick}
           isExpanded={isDropdownOpen}
           variant="secondary"
-          isDisabled={isLoading}
+          isDisabled={isLoading || isDisabled}
           aria-label="Export report options"
         >
           {isLoading ? (

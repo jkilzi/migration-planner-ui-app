@@ -25,6 +25,7 @@ import {
   SplitItem,
   Stack,
   StackItem,
+  Tooltip,
 } from '@patternfly/react-core';
 
 import { AppPage } from '../../components/AppPage';
@@ -152,6 +153,24 @@ const Inner: React.FC = () => {
     Boolean(clusterView.ramGB);
 
   const clusterSelectDisabled = clusterView.clusterOptions.length <= 1;
+
+  // Check if the selected cluster has hosts and VMs
+  const hasClusterResources = (viewInfra?: Infra, viewVms?: VMs): boolean => {
+    const hasHosts =
+      (viewInfra?.totalHosts ?? 0) > 0 || (viewInfra?.hosts?.length ?? 0) > 0;
+    const hasVms = (viewVms?.total ?? 0) > 0;
+    return hasHosts && hasVms;
+  };
+
+  const canShowClusterRecommendations =
+    selectedClusterId !== 'all' &&
+    hasClusterResources(clusterView.viewInfra, clusterView.viewVms);
+
+  // Check if export should be disabled (no VMs or hosts)
+  const canExportReport = hasClusterResources(
+    clusterView.viewInfra,
+    clusterView.viewVms,
+  );
 
   const source = assessment.sourceId
     ? discoverySourcesContext.getSourceById(assessment.sourceId)
@@ -315,40 +334,98 @@ const Inner: React.FC = () => {
         hasClusterScopedData ? (
           <Split hasGutter>
             <SplitItem>
-              <EnhancedDownloadButton
-                onError={setExportError}
-                elementId="discovery-report"
-                componentToRender={
-                  <Dashboard
-                    infra={clusterView.viewInfra as Infra}
-                    vms={clusterView.viewVms as VMs}
-                    cpuCores={clusterView.cpuCores as VMResourceBreakdown}
-                    ramGB={clusterView.ramGB as VMResourceBreakdown}
-                    isExportMode={true}
-                    exportAllViews={true}
-                    clusters={clusterView.viewClusters}
-                    isAggregateView={clusterView.isAggregateView}
-                    clusterFound={clusterView.clusterFound}
+              {canExportReport ? (
+                <EnhancedDownloadButton
+                  onError={setExportError}
+                  elementId="discovery-report"
+                  componentToRender={
+                    <Dashboard
+                      infra={clusterView.viewInfra as Infra}
+                      vms={clusterView.viewVms as VMs}
+                      cpuCores={clusterView.cpuCores as VMResourceBreakdown}
+                      ramGB={clusterView.ramGB as VMResourceBreakdown}
+                      isExportMode={true}
+                      exportAllViews={true}
+                      clusters={clusterView.viewClusters}
+                      isAggregateView={clusterView.isAggregateView}
+                      clusterFound={clusterView.clusterFound}
+                    />
+                  }
+                  sourceData={discoverySourcesContext.sourceSelected as Source}
+                  snapshot={last}
+                  documentTitle={`${assessment.name || `Assessment ${id}`} - vCenter report${
+                    clusterView.isAggregateView
+                      ? ''
+                      : ` - ${clusterView.selectionLabel}`
+                  }`}
+                />
+              ) : (
+                <Tooltip
+                  content={
+                    <p>
+                      There are no ESXi hosts or VMs to display. Export is not
+                      available for empty reports.
+                    </p>
+                  }
+                >
+                  <EnhancedDownloadButton
+                    onError={setExportError}
+                    elementId="discovery-report"
+                    componentToRender={
+                      <Dashboard
+                        infra={clusterView.viewInfra as Infra}
+                        vms={clusterView.viewVms as VMs}
+                        cpuCores={clusterView.cpuCores as VMResourceBreakdown}
+                        ramGB={clusterView.ramGB as VMResourceBreakdown}
+                        isExportMode={true}
+                        exportAllViews={true}
+                        clusters={clusterView.viewClusters}
+                        isAggregateView={clusterView.isAggregateView}
+                        clusterFound={clusterView.clusterFound}
+                      />
+                    }
+                    sourceData={
+                      discoverySourcesContext.sourceSelected as Source
+                    }
+                    snapshot={last}
+                    documentTitle={`${assessment.name || `Assessment ${id}`} - vCenter report${
+                      clusterView.isAggregateView
+                        ? ''
+                        : ` - ${clusterView.selectionLabel}`
+                    }`}
+                    isDisabled={true}
                   />
-                }
-                sourceData={discoverySourcesContext.sourceSelected as Source}
-                snapshot={last}
-                documentTitle={`${assessment.name || `Assessment ${id}`} - vCenter report${
-                  clusterView.isAggregateView
-                    ? ''
-                    : ` - ${clusterView.selectionLabel}`
-                }`}
-              />
+                </Tooltip>
+              )}
             </SplitItem>
 
             {selectedClusterId !== 'all' ? (
               <SplitItem>
-                <Button
-                  variant="primary"
-                  onClick={() => setIsSizingWizardOpen(true)}
-                >
-                  View target cluster recommendations
-                </Button>
+                {canShowClusterRecommendations ? (
+                  <Button
+                    variant="primary"
+                    onClick={() => setIsSizingWizardOpen(true)}
+                  >
+                    View target cluster recommendations
+                  </Button>
+                ) : (
+                  <Tooltip
+                    content={
+                      <p>
+                        This cluster has no ESXi hosts or VMs. Cluster
+                        recommendations are not available for empty clusters.
+                      </p>
+                    }
+                  >
+                    <Button
+                      variant="primary"
+                      onClick={() => setIsSizingWizardOpen(true)}
+                      isAriaDisabled
+                    >
+                      View target cluster recommendations
+                    </Button>
+                  </Tooltip>
+                )}
               </SplitItem>
             ) : null}
           </Split>
