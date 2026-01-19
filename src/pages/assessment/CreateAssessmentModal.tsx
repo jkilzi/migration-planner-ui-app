@@ -136,6 +136,7 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
     fileDescription: string;
     allowedExtensions: string[];
     accept: string;
+    fileLink?: string;
   } => {
     switch (mode) {
       case 'inventory':
@@ -153,6 +154,8 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
           fileDescription: 'Select an Excel file from RVTools (max 50 MiB)',
           accept: '.xlsx,.xls',
           allowedExtensions: ['xlsx', 'xls'],
+          fileLink:
+            'https://kubev2v.github.io/assisted-migration-docs/docs/tutorial/#prerequisites-rvtools-file-requirements',
         };
       case 'agent':
         return {
@@ -403,6 +406,16 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
               }}
             >
               {config.fileDescription}
+              <br />
+              {config.fileLink && (
+                <a
+                  href={config.fileLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  RVTools File Requirements
+                </a>
+              )}
             </div>
             <FileUpload
               id="assessment-file"
