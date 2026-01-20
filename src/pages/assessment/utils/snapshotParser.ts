@@ -2,11 +2,11 @@ import { Snapshot as SnapshotModel } from '@migration-planner-ui/api-client/mode
 
 /**
  * Checks if an assessment has useful inventory data by examining
- * the latest snapshot's inventory.clusters property.
+ * the latest snapshot's inventory fields across legacy shapes.
  *
  * An assessment is considered to have useful data when:
  * - It has at least one snapshot, AND
- * - The latest snapshot has `inventory.clusters` defined (not null/undefined)
+ * - The latest snapshot contains any supported inventory shape
  */
 export const hasUsefulData = (
   snapshots: SnapshotModel[] | undefined,
@@ -25,7 +25,31 @@ export const hasUsefulData = (
   );
 
   const lastSnapshot = sortedSnapshots[0];
-  return lastSnapshot.inventory?.clusters != null;
+  const inventory = lastSnapshot.inventory;
+  const legacyInventory = inventory as
+    | {
+        infra?: unknown;
+        vms?: unknown;
+        vcenter?: { infra?: unknown; vms?: unknown };
+      }
+    | undefined;
+  const legacySnapshot = lastSnapshot as { infra?: unknown; vms?: unknown };
+
+  const hasClustersProp =
+    inventory != null && Object.hasOwn(inventory, 'clusters');
+
+  if (hasClustersProp) {
+    return inventory?.clusters != null;
+  }
+
+  return (
+    legacyInventory?.vcenter?.infra != null ||
+    legacyInventory?.vcenter?.vms != null ||
+    legacyInventory?.infra != null ||
+    legacyInventory?.vms != null ||
+    legacySnapshot.infra != null ||
+    legacySnapshot.vms != null
+  );
 };
 
 interface SnapshotData {
