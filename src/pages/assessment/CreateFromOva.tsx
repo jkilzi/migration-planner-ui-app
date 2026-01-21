@@ -458,6 +458,7 @@ const CreateFromOva: React.FC = () => {
                 setSelectedEnvironmentId(newId);
               }
               setIsCreatingSource(false);
+              discoverySourcesContext.listSources();
             }}
             isDisabled={discoverySourcesContext.isDownloadingSource}
             onStartDownload={() => discoverySourcesContext.setDownloadUrl?.('')}

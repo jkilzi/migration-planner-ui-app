@@ -1,12 +1,13 @@
+/* eslint-disable simple-import-sort/imports */
 import React, { useCallback, useState } from 'react';
 
 import {
   Alert,
   Button,
-  EmptyState as PFEmptyState,
   EmptyStateActions,
   EmptyStateBody,
   EmptyStateFooter,
+  EmptyState as PFEmptyState,
   StackItem,
 } from '@patternfly/react-core';
 import { ExclamationCircleIcon, SearchIcon } from '@patternfly/react-icons';
@@ -24,8 +25,13 @@ export const EmptyState: React.FC = () => {
   ] = useState(false);
 
   const toggleDiscoverySourceSetupModal = useCallback((): void => {
-    setShouldShowDiscoverySetupModal((lastState) => !lastState);
-  }, []);
+    setShouldShowDiscoverySetupModal((lastState) => {
+      if (lastState === true) {
+        discoverySourcesContext.listSources();
+      }
+      return !lastState;
+    });
+  }, [discoverySourcesContext]);
 
   const handleTryAgain = useCallback(() => {
     if (!discoverySourcesContext.isLoadingSources) {

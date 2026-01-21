@@ -352,6 +352,7 @@ export const Environment: React.FC = () => {
           onClose={() => {
             setEditSourceId(null);
             toggleDiscoverySourceSetupModal();
+            discoverySourcesContext.listSources();
           }}
           isDisabled={discoverySourcesContext.isDownloadingSource}
           onStartDownload={() => setIsOvaDownloading(true)}
