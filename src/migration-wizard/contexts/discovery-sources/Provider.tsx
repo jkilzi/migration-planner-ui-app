@@ -201,30 +201,54 @@ export const Provider: React.FC<PropsWithChildren> = (props) => {
 
       // Create different request based on sourceType
       if (sourceType === 'inventory' && jsonValue) {
-        const assessment = await assessmentApi.createAssessment({
-          assessmentForm: {
-            name: assessmentName,
-            sourceType: sourceType,
-            inventory:
-              typeof jsonValue === 'string' ? JSON.parse(jsonValue) : jsonValue,
-          },
-        });
-        await listAssessments();
-        return assessment;
+        try {
+          const assessment = await assessmentApi.createAssessment({
+            assessmentForm: {
+              name: assessmentName,
+              sourceType: sourceType,
+              inventory:
+                typeof jsonValue === 'string'
+                  ? JSON.parse(jsonValue)
+                  : jsonValue,
+            },
+          });
+          await listAssessments();
+          return assessment;
+        } catch (error: unknown) {
+          if (hasResponse(error)) {
+            const message = await extractResponseErrorMessage(error.response);
+            throw new Error(message);
+          }
+          throw coerceToError(
+            error,
+            'Unexpected API response while creating assessment.',
+          );
+        }
       } else if (sourceType === 'rvtools') {
         throw new Error(
           'RVTools assessments must be created using createRVToolsJob for async processing',
         );
       } else if (sourceType === 'agent' && sourceId) {
-        const assessment = await assessmentApi.createAssessment({
-          assessmentForm: {
-            sourceId: sourceId,
-            name: assessmentName,
-            sourceType: sourceType,
-          },
-        });
-        await listAssessments();
-        return assessment;
+        try {
+          const assessment = await assessmentApi.createAssessment({
+            assessmentForm: {
+              sourceId: sourceId,
+              name: assessmentName,
+              sourceType: sourceType,
+            },
+          });
+          await listAssessments();
+          return assessment;
+        } catch (error: unknown) {
+          if (hasResponse(error)) {
+            const message = await extractResponseErrorMessage(error.response);
+            throw new Error(message);
+          }
+          throw coerceToError(
+            error,
+            'Unexpected API response while creating assessment.',
+          );
+        }
       } else {
         throw new Error(
           `Invalid parameters for assessment creation: ${sourceType}`,

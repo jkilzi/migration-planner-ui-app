@@ -44,6 +44,12 @@ const CreateFromOva: React.FC = () => {
     React.useState<boolean>(false);
   const [uploadMessage, setUploadMessage] = React.useState<string | null>(null);
   const [isUploadError, setIsUploadError] = React.useState<boolean>(false);
+  const [apiError, setApiError] = React.useState<Error | null>(null);
+
+  const isDuplicateNameError = (error: Error | null): boolean =>
+    !!error &&
+    (/assessment with name '.*' already exists/i.test(error.message || '') ||
+      /already exists/i.test(error.message || ''));
 
   const createdSourceId = discoverySourcesContext.sourceCreatedId || '';
   const createdSource = createdSourceId
@@ -160,6 +166,7 @@ const CreateFromOva: React.FC = () => {
   const handleSubmit = async (): Promise<void> => {
     setIsCreatingAssessment(true);
     try {
+      setApiError(null);
       const sourceIdToUse = useExisting
         ? selectedEnvironmentId
         : createdSourceId;
@@ -172,7 +179,19 @@ const CreateFromOva: React.FC = () => {
         undefined,
         sourceIdToUse,
       );
-
+      // Guard: if provider returns an error-like value instead of throwing, surface it
+      if (
+        !assessment ||
+        typeof assessment !== 'object' ||
+        !(assessment as { id?: unknown }).id
+      ) {
+        const message =
+          assessment instanceof Error
+            ? assessment.message
+            : (assessment as { message?: string })?.message ||
+              'Unexpected response while creating assessment.';
+        throw new Error(message);
+      }
       await discoverySourcesContext.listAssessments();
       navigate(
         `/openshift/migration-assessment/assessments/${assessment.id}/report`,
@@ -182,6 +201,12 @@ const CreateFromOva: React.FC = () => {
       } catch (e) {
         // ignore
       }
+    } catch (e) {
+      setApiError(
+        e instanceof Error
+          ? e
+          : new Error((e as { message?: string })?.message || String(e)),
+      );
     } finally {
       setIsCreatingAssessment(false);
     }
@@ -198,6 +223,8 @@ const CreateFromOva: React.FC = () => {
 
   const isSubmitDisabled =
     !name || (useExisting ? !selectedEnvironmentId : !createdSourceId);
+  const hasDuplicateNameError = isDuplicateNameError(apiError);
+  const hasGeneralApiError = !!apiError && !isDuplicateNameError(apiError);
 
   return (
     <AppPage
@@ -230,12 +257,22 @@ const CreateFromOva: React.FC = () => {
                   aria-label="Assessment name"
                   placeholder="Assessment 1"
                   value={name}
-                  onChange={(_, v) => setName(v)}
+                  onChange={(_, v) => {
+                    setName(v);
+                    if (apiError) setApiError(null);
+                  }}
+                  validated={hasDuplicateNameError ? 'error' : 'default'}
                 />
               </InputGroupItem>
             </InputGroup>
             <HelperText>
-              <HelperTextItem>Name your migration assessment</HelperTextItem>
+              <HelperTextItem
+                variant={hasDuplicateNameError ? 'error' : 'default'}
+              >
+                {hasDuplicateNameError
+                  ? apiError?.message
+                  : 'Name your migration assessment'}
+              </HelperTextItem>
             </HelperText>
           </FormGroup>
 
@@ -335,6 +372,18 @@ const CreateFromOva: React.FC = () => {
             <div className="pf-v6-u-mt-md">
               <Alert isInline variant="danger" title="Upload error">
                 {discoverySourcesContext.errorUpdatingInventory.message}
+              </Alert>
+            </div>
+          )}
+          {hasGeneralApiError && (
+            <div className="pf-v6-u-mt-md">
+              <Alert
+                isInline
+                variant="danger"
+                title="Failed to create assessment"
+              >
+                {apiError?.message ||
+                  'An error occurred while creating the assessment'}
               </Alert>
             </div>
           )}
