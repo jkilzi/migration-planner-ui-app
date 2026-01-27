@@ -37,6 +37,9 @@
       "envFile": "${workspaceFolder}/../migration-planner/.envrc",
       "command": "npx concurrently --kill-others -c auto -n \"api,wds\" -p \"{name}:{pid}\" \"make -C ../migration-planner run\" \"make run-standalone\"",
       "cwd": "${workspaceFolder}",
+      "env": {
+        "MIGRATION_PLANNER_ADDRESS": "0.0.0.0:3443"
+      },
       // "preLaunchTask": "Deploy DB", // Uncomment to deploy the DB before starting the back-end API
       "serverReadyAction": {
         "action": "debugWithChrome",
