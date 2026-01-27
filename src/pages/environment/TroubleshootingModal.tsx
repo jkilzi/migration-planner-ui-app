@@ -7,7 +7,9 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-const syntaxTheme = oneDark as Record<string, React.CSSProperties>;
+const syntaxTheme = oneDark as unknown as {
+  [key: string]: React.CSSProperties;
+};
 
 export const TroubleshootingModal: React.FC<{
   isOpen: boolean;
@@ -51,7 +53,7 @@ export const TroubleshootingModal: React.FC<{
         {markdown && (
           <ReactMarkdown
             components={{
-              code({ className, children, ...props }) {
+              code({ className, children, style: _, ref: __, ...props }) {
                 const match = /language-(\w+)/.exec(className || "");
                 const content = Array.isArray(children)
                   ? children.join("")
@@ -62,10 +64,14 @@ export const TroubleshootingModal: React.FC<{
                     : "";
                 return match ? (
                   <SyntaxHighlighter
-                    style={syntaxTheme}
                     language={match[1]}
                     PreTag="div"
                     {...props}
+                    style={
+                      syntaxTheme as unknown as {
+                        [key: string]: React.CSSProperties;
+                      }
+                    }
                   >
                     {text.replace(/\n$/, "")}
                   </SyntaxHighlighter>

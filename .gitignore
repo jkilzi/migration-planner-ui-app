@@ -1,40 +1,19 @@
 # See https://help.github.com/ignore-files/ for more about ignoring files.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# vscode config
+.idea/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/launch.json
 !.vscode/settings.json
 !.vscode/tasks.json
 
-# ide config
-.idea/
-
-# dependencies
 node_modules
-
-# production
-dist
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-coverage
-
-# cache folder
-.cache*
-.swc
-
-.yalc
-yalc.lock
-
-# Standalone build
-dist-standalone
-docker-config
-
-# lint
-.eslintcache
+/dist
+/coverage
+/dev/dist
 
 # Env files
 .envrc

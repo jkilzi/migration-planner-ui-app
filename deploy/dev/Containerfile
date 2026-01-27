@@ -1,97 +1,33 @@
-# Multi-stage build for Migration Planner UI standalone app
+# Multi-stage build with layers caching optimization for Migration Planner UI standalone app
 
 # Build stage
-FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/nodejs-20-minimal AS builder
-
-# Build argument to use migration-planner-api service
-ARG USE_MIGRATION_PLANNER_API=false
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package.json package-lock.json yarn.lock ./
-
-# Install dependencies
+FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/nodejs-22-minimal AS builder
+# Install system dependencies first (rarely changes)
 USER 0
-RUN microdnf install -y git && \
-    npm ci --no-audit
-
-# Copy source code
-COPY . .
-
-# Set environment variable for build
+RUN microdnf install -y make git && microdnf clean all
+# Switch to container user
+USER 1001
+WORKDIR ${APP_ROOT}
+# Copy package files only
+COPY --chown=1001:0 package.json package-lock.json ./
+# Install npm dependencies (cached unless package files change)
+RUN npm install --no-audit --no-fund
+# Copy source code (invalidates on any source change)
+COPY --chown=1001:0 . .
+# Build argument - placed just before it's needed
+ARG USE_MIGRATION_PLANNER_API=false
 ENV USE_MIGRATION_PLANNER_API=${USE_MIGRATION_PLANNER_API}
-
 # Build the standalone application
 RUN npm run build:standalone
 
 # Runtime stage
-FROM --platform=linux/amd64 registry.access.redhat.com/ubi8/nginx-122 AS runtime
-
+FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/nginx-126 AS runtime
+# Copy nginx configuration first (changes less often than built app)
+COPY --from=builder ${APP_ROOT}/deploy/dev/nginx.conf /etc/nginx/nginx.conf
 # Copy built application from builder stage
-COPY --from=builder /app/dist-standalone /usr/share/nginx/html
-
-# Copy nginx configuration for SPA with API proxy
-RUN echo 'events { worker_connections 1024; } \
-http { \
-    include /etc/nginx/mime.types; \
-    default_type application/octet-stream; \
-    sendfile on; \
-    keepalive_timeout 65; \
-    \
-                  upstream migration_planner_api { \
-         server migration-planner-api:3443; \
-     } \
-     \
-    server { \
-        listen 8080; \
-        server_name localhost; \
-        root /usr/share/nginx/html; \
-        index index.html; \
-        \
-         # Proxy API calls to migration-planner-api service \
-         location /api/ { \
-             proxy_pass http://migration_planner_api; \
-             proxy_set_header Host $host; \
-             proxy_set_header X-Real-IP $remote_addr; \
-             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
-             proxy_set_header X-Forwarded-Proto $scheme; \
-             proxy_connect_timeout 30s; \
-             proxy_send_timeout 30s; \
-             proxy_read_timeout 30s; \
-         } \
-         \
-         # Proxy legacy API path to migration-planner-api service (without rewrite) \
-         location /api/migration-assessment/ { \
-             proxy_pass http://migration_planner_api/; \
-             proxy_set_header Host $host; \
-             proxy_set_header X-Real-IP $remote_addr; \
-             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
-             proxy_set_header X-Forwarded-Proto $scheme; \
-             proxy_connect_timeout 30s; \
-             proxy_send_timeout 30s; \
-             proxy_read_timeout 30s; \
-         } \
-        \
-        # Serve static files and SPA \
-        location / { \
-            try_files $uri $uri/ /index.html; \
-        } \
-        \
-        # Enable gzip compression \
-        gzip on; \
-        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript; \
-        \
-        # Security headers \
-        add_header X-Frame-Options "SAMEORIGIN" always; \
-        add_header X-Content-Type-Options "nosniff" always; \
-        add_header X-XSS-Protection "1; mode=block" always; \
-    } \
-}' > /etc/nginx/nginx.conf
-
+COPY --from=builder ${APP_ROOT}/dev/dist /usr/share/nginx/html
 # Expose port 8080 (nginx default for non-root)
-EXPOSE 8080
+EXPOSE 8081
 
 # Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]

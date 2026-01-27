@@ -1,12 +1,14 @@
 import path from "node:path";
 
+import js from "@eslint/js";
 // eslint-disable-next-line rulesdir/disallow-fec-relative-imports
 import fecConfigs from "@redhat-cloud-services/eslint-config-redhat-cloud-services";
 import tsParser from "@typescript-eslint/parser";
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 import reactPlugin from "eslint-plugin-react";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
 import rulesdir from "eslint-plugin-rulesdir";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import globals from "globals";
@@ -84,12 +86,6 @@ if (!isFecConfig(fecConfig)) {
 const fecConfigRulesdirRules = getFecConfigRulesdirRules(fecConfig);
 
 /** @type {import('eslint').Linter.Config} */
-const globalIgnoresConfig = {
-  name: "globalIgnoresConfig",
-  ignores: ["**/node_modules/**", "**/dist/**", "**/build-tools/**"],
-};
-
-/** @type {import('eslint').Linter.Config} */
 const allFilesConfig = {
   name: "allFilesConfig",
   languageOptions: {
@@ -121,20 +117,18 @@ const allFilesConfig = {
 /** @type {import('eslint').Linter.Config} */
 const srcConfig = {
   name: "srcConfig",
-  files: ["src/**/*.ts", "src/**/*.tsx"],
-  plugins: {
-    react: reactPlugin,
-    "react-hooks": reactHooksPlugin,
-  },
+  files: ["src/**/*.{ts,tsx}"],
   extends: [
+    js.configs.recommended,
     tsEslintPlugin.configs.recommendedTypeChecked,
     reactPlugin.configs.flat["jsx-runtime"],
     reactHooksPlugin.configs.flat.recommended,
+    reactRefresh.configs.vite,
   ],
   languageOptions: {
+    ecmaVersion: 2020,
     globals: {
       ...globals.browser,
-      ...globals.es2026,
       insights: "readonly",
       CRC_APP_NAME: "readonly",
     },
@@ -157,7 +151,7 @@ const srcConfig = {
 const srcTestsConfig = {
   name: "srcTestsConfig",
   ...srcConfig,
-  files: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+  files: ["src/**/*.test.{ts,tsx}"],
   languageOptions: {
     ...srcConfig.languageOptions,
     globals: {
@@ -168,10 +162,29 @@ const srcTestsConfig = {
   },
 };
 
+/** @type {import('eslint').Linter.Config} */
+const devConfig = {
+  name: "devConfig",
+  files: ["dev/**/*.{ts,tsx}"],
+  extends: [
+    js.configs.recommended,
+    tsEslintPlugin.configs.recommended,
+    reactHooksPlugin.configs.flat.recommended,
+    reactRefresh.configs.vite,
+  ],
+  languageOptions: {
+    ecmaVersion: 2020,
+    globals: {
+      ...globals.browser,
+    },
+  },
+};
+
 export default defineConfig(
+  globalIgnores(["node_modules", "**/dist/**", "build-tools"]),
   tsEslintPlugin.configs.recommended,
-  globalIgnoresConfig,
   allFilesConfig,
+  devConfig,
   srcConfig,
   srcTestsConfig,
   eslintConfigPrettier,
