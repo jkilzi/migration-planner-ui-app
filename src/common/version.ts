@@ -53,7 +53,7 @@ const fetchApiInfo = async (customFetch?: typeof fetch): Promise<ApiInfo> => {
 
   try {
     const config = new Configuration({
-      basePath: process.env.PLANNER_API_BASE_URL || "/api/migration-assessment",
+      basePath: process.env.PLANNER_API_BASE_URL,
       fetchApi: customFetch,
     });
 

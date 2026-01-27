@@ -5,7 +5,7 @@ node_modules/
 
 # Build outputs
 dist/
-dist-standalone/
+dev/dist/
 .cache/
 
 # Development files
@@ -28,12 +28,6 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-jspm_packages/
 
 # Optional npm cache directory
 .npm
@@ -75,7 +69,7 @@ Desktop.ini
 # Test files and coverage
 coverage/
 test-results/
-*.test.js.snap
+*.test*.snap
 
 # Local development
 local/
@@ -91,6 +85,6 @@ docs/
 .gitlab-ci.yml
 Jenkinsfile
 
-# Container related files (avoid recursion)
+# Container related files (for cache optimization in layer: 'COPY . .')
 deploy/dev/Containerfile
 deploy/dev/.containerignore 

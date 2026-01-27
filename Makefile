@@ -6,30 +6,48 @@ REPLICAS ?= 1
 
 # Container runtime configuration
 CONTAINER_NAME ?= migration-planner-ui
-CONTAINER_PORT ?= 8080
-HOST_PORT ?= 8080
+CONTAINER_PORT ?= 8081
+HOST_PORT ?= 8081
 CONTAINERFILE_PATH ?= deploy/dev/Containerfile
 CONTAINERIGNORE_PATH ?= deploy/dev/.containerignore
 
+# Architecture configuration (auto-detect, supports amd64/arm64)
+ARCH ?= $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/' | sed 's/arm64/arm64/')
+
+# Git and version information
 SOURCE_GIT_COMMIT ?=$(shell git rev-parse "HEAD^{commit}" 2>/dev/null)
 SOURCE_GIT_COMMIT_SHORT ?=$(shell git rev-parse --short "HEAD^{commit}" 2>/dev/null)
 SOURCE_GIT_TAG ?=$(shell git describe --always --tags --abbrev=7 --match '[0-9]*\.[0-9]*\.[0-9]*' --match 'v[0-9]*\.[0-9]*\.[0-9]*' || echo 'v0.0.0-unknown-$(SOURCE_GIT_COMMIT_SHORT)')
-IMAGE_TAG ?= $(SOURCE_GIT_COMMIT)
+IMAGE_TAG ?= $(SOURCE_GIT_COMMIT_SHORT)
+IMAGE ?= localhost/migration-assessment-ui
 
+# OpenShift CLI configuration
+OC_BIN ?= $(shell command -v oc 2>/dev/null)
+OC_VERSION ?= stable
+
+# Common build environment variables
+BUILD_ENV := MIGRATION_PLANNER_UI_GIT_COMMIT=$(SOURCE_GIT_COMMIT) \
+             MIGRATION_PLANNER_UI_VERSION=$(SOURCE_GIT_TAG)
+
+# Linting and formatting command bases
+ESLINT_CMD := npx eslint --cache --cache-location node_modules/.cache/eslintcache --cache-strategy content .
+PRETTIER_CMD := npx prettier --cache --cache-location node_modules/.cache/prettiercache --cache-strategy content .
+
+# Verify oc installed, in linux install it if not already installed
 .PHONY: oc
-oc: # Verify oc installed, in linux install it if not already installed
+oc:
 ifeq ($(OC_BIN),)
-	@if [ "$(OS)" = "darwin" ]; then \
-		echo "Error: macOS detected. Please install oc manually from https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$(OC_VERSION)/"; \
+	@if [ "$$(uname -s)" = "Darwin" ]; then \
+		echo "❌ Error: macOS detected. Please install oc manually from https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$(OC_VERSION)/"; \
 		exit 1; \
 	fi
-	@echo "oc not found. Installing for Linux..."
+	@echo "🔧 oc not found. Installing for Linux..."
 	@curl -sL "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/$(OC_VERSION)/openshift-client-linux.tar.gz" | tar -xz
 	@chmod +x oc kubectl
-	@sudo mv oc kubectl /usr/local/bin/
-	@echo "oc installed successfully."
+	@mkdir -p ~/.local/bin && mv oc kubectl ~/.local/bin/
+	@echo "✅ oc installed successfully."
 else
-	@echo "oc is already installed at $(OC_BIN)"
+	@echo "✅ oc is already installed at $(OC_BIN)"
 endif
 
 # Downloads and sets up all the packages, based on your package.json
@@ -39,78 +57,126 @@ install:
 	npm install --legacy-peer-deps
 	@echo "✅ All packages are updated successfully..."
 
+# Immutable installation using npm ci (for CI environments)
+.PHONY: ci-install
+ci-install:
+	@echo "📦 Installing packages (immutable)..."
+	npm ci --legacy-peer-deps
+	@echo "✅ Packages installed successfully!"
+
+# Clean build artifacts and dependencies
+.PHONY: clean
+clean:
+	@echo "🧹 Cleaning build artifacts and dependencies..."
+	@npx rimraf node_modules dist dev/dist
+	@echo "✅ Clean completed!"
+
 # Build the standalone application locally
 .PHONY: build-standalone
 build-standalone: install
-	@echo "Building standalone application..."
-	rm -rf dist-standalone
-	MIGRATION_PLANNER_UI_GIT_COMMIT=$(SOURCE_GIT_COMMIT) \
-	 MIGRATION_PLANNER_UI_VERSION=$(SOURCE_GIT_TAG) \
-	 npm run build:standalone
-	@echo "✅ Standalone build completed in dist-standalone/"
+	@echo "🔨 Building standalone application..."
+	@rm -rf dev/dist
+	@$(BUILD_ENV) npx vite build ./dev -c ./dev/vite.config.ts
+	@echo "✅ Standalone build completed in dev/dist/"
 
 # Run the standalone application locally
 .PHONY: run-standalone
 run-standalone: install
-	@echo "Running standalone application..."
-	rm -rf dist-standalone
-	MIGRATION_PLANNER_UI_GIT_COMMIT=$(SOURCE_GIT_COMMIT) \
-	 MIGRATION_PLANNER_UI_VERSION=$(SOURCE_GIT_TAG) \
-	 PLANNER_LOCAL_DEV=true \
-	 npm run start:standalone
+	@echo "🚀 Running standalone application..."
+	@rm -rf dev/dist
+	@$(BUILD_ENV) PLANNER_LOCAL_DEV=1 \
+		npx vite ./dev -c ./dev/vite.config.ts --mode dev --open http://localhost:3000/openshift/migration-assessment
 	@echo "✅ Standalone run completed"
+
+# Preview standalone build
+.PHONY: preview-standalone
+preview-standalone: install
+	@echo "👀 Previewing standalone build..."
+	@npx vite preview ./dev -c ./dev/vite.config.ts --mode dev --open http://localhost:3000/openshift/migration-assessment
+	@echo "✅ Standalone preview started!"
+
+# Patch /etc/hosts for local development
+.PHONY: patch-hosts
+patch-hosts: install
+	@echo "🔧 Patching /etc/hosts for local development..."
+	@npx fec patch-etc-hosts
+	@echo "✅ Hosts file patched!"
+
+# Start federated dev server (HOT mode)
+.PHONY: start
+start: install
+	@echo "🚀 Starting federated dev server..."
+	@HOT=true npx fec dev --clouddotEnv=stage --uiEnv=stable
+	@echo "✅ Federated dev server started!"
+
+# Start dev proxy server
+.PHONY: start-dev-proxy
+start-dev-proxy: install
+	@echo "🚀 Starting dev proxy server..."
+	@npx fec dev-proxy --clouddotEnv=stage --uiEnv=stable
+	@echo "✅ Dev proxy server started!"
+
+# Start federated static server
+.PHONY: start-federated
+start-federated: install
+	@echo "🚀 Starting federated static server..."
+	@npx fec static
+	@echo "✅ Federated static server started!"
 
 # Legacy build target (federated module)
 .PHONY: build
 build: install
-	@echo "Building federated module..."
-	rm -rf dist
-	MIGRATION_PLANNER_UI_GIT_COMMIT=$(SOURCE_GIT_COMMIT) \
-	 MIGRATION_PLANNER_UI_VERSION=$(SOURCE_GIT_TAG) \
-	 npm run build
+	@echo "🔨 Building federated module..."
+	@rm -rf dist
+	@$(BUILD_ENV) npx fec build
 	@echo "✅ Federated build completed in dist/"
 
-# Run ESLint checks
-.PHONY: lint-check
-lint-check: install
-	@echo "🔍 Running lint checks..."
-	@npm run lint
-	@echo "✅ Lint checks passed!"
+# Run ESLint (use FIX=1 to auto-fix issues)
+.PHONY: lint
+lint: install
+ifdef FIX
+	@echo "🧹 Fixing lint issues..."
+	@$(ESLINT_CMD) --fix
+	@echo "✅ Lint issues fixed!"
+else
+	@echo "🔍 Checking lint issues..."
+	@$(ESLINT_CMD)
+	@echo "✅ Lint issues checked!"
+endif
 
-# Run ESLint with auto-fix
-.PHONY: lint-fix
-lint-fix: install
-	@echo "🧹 Running lint fix..."
-	@npm run lint -- --fix
-	@echo "✅ Lint fix completed!"
-
-# Run Prettier format checks
-.PHONY: format-check
-format-check: install
-	@echo "🎨 Running format checks..."
-	@npm run format -- --check
-	@echo "✅ Format checks passed!"
-
-# Run Prettier format fix
-.PHONY: format-fix
-format-fix: install
-	@echo "🎨 Formatting code..."
-	@npm run format -- --write
-	@echo "✅ Format completed!"
+# Run Prettier format (use FIX=1 to format code)
+.PHONY: format
+format: install
+ifdef FIX
+	@echo "🔧 Fixing code formatting..."
+	@$(PRETTIER_CMD) --write
+	@echo "✅ Code formatting fixed!"
+else
+	@echo "🎨 Checking code formatting..."
+	@$(PRETTIER_CMD) --check
+	@echo "✅ Code formatting checked!"
+endif
 
 # TypeScript type checking
 .PHONY: type-check
 type-check: install
-	@echo "🔍 Running TypeScript type checking..."
+	@echo "🔍 Checking TypeScript type issues..."
 	@npx tsc --noEmit
-	@echo "✅ TypeScript type checking passed!"
+	@echo "✅ TypeScript type issues checked!"
 
 # Tests
 .PHONY: test
 test: install
 	@echo "🔍 Running tests..."
-	@npm test
+	@npx vitest run
 	@echo "✅ Tests passed!"
+
+# Test coverage
+.PHONY: coverage
+coverage: install
+	@echo "📊 Running tests with coverage..."
+	@npx vitest run --coverage
+	@echo "✅ Coverage report generated!"
 
 # Security vulnerability scanning
 .PHONY: security-scan
@@ -135,83 +201,90 @@ security-fix-force: install
 
 # Combined format validation - runs both linting and format checks
 .PHONY: validate-all
-validate-all: lint-check format-check type-check test security-scan
+validate-all: lint format type-check test security-scan
 	@echo "✅ All validation checks passed!"
 
 # Build the container image
 .PHONY: podman-build
 podman-build:
-	@echo "Building container image: $(IMAGE):$(IMAGE_TAG)"
+	@echo "🔨 Building container image: $(IMAGE):$(IMAGE_TAG) (arch: $(ARCH))"
 	@if [ ! -f "$(CONTAINERFILE_PATH)" ]; then \
-		echo "Error: Containerfile not found at $(CONTAINERFILE_PATH)"; \
+		echo "❌ Error: Containerfile not found at $(CONTAINERFILE_PATH)"; \
 		exit 1; \
 	fi
-	$(PODMAN) build . \
+	@$(PODMAN) build . \
 		-t $(IMAGE):$(IMAGE_TAG) \
 		-f $(CONTAINERFILE_PATH) \
 		--ignorefile $(CONTAINERIGNORE_PATH) \
-		--arch amd64 \
+		--arch $(ARCH) \
 		--memory=4g \
 		--layers \
 		--build-arg USE_MIGRATION_PLANNER_API=true
-	@echo "Container image built successfully: $(IMAGE):$(IMAGE_TAG)"
+	@echo "✅ Container image built successfully: $(IMAGE):$(IMAGE_TAG)"
 
 # Tag the image as latest
 .PHONY: podman-tag-latest
 podman-tag-latest:
-	$(PODMAN) tag $(IMAGE):$(IMAGE_TAG) $(IMAGE):latest
-	@echo "Tagged $(IMAGE):$(IMAGE_TAG) as $(IMAGE):latest"
+	@$(PODMAN) tag $(IMAGE):$(IMAGE_TAG) $(IMAGE):latest
+	@echo "🏷️  Tagged $(IMAGE):$(IMAGE_TAG) as $(IMAGE):latest"
 
 # Run the container
 .PHONY: podman-run
-podman-run:
-	@echo "Starting container: $(CONTAINER_NAME)"
+podman-run: podman-build
+	@echo "🚀 Starting container: $(CONTAINER_NAME)"
 	@# Stop and remove existing container if it exists
-	-$(PODMAN) stop $(CONTAINER_NAME) 2>/dev/null || true
-	-$(PODMAN) rm $(CONTAINER_NAME) 2>/dev/null || true
-	@# Check if image exists
-	@if ! $(PODMAN) image exists $(IMAGE):$(IMAGE_TAG); then \
-		echo "Error: Image $(IMAGE):$(IMAGE_TAG) not found. Run 'make podman-build' first."; \
-		exit 1; \
+	@-$(PODMAN) stop $(CONTAINER_NAME) 2>/dev/null || true
+	@-$(PODMAN) rm $(CONTAINER_NAME) 2>/dev/null || true
+	@# Check if port is available (using lsof for cross-platform compatibility)
+	@if lsof -i :$(HOST_PORT) >/dev/null 2>&1; then \
+		echo "⚠️  Warning: Port $(HOST_PORT) appears to be in use."; \
 	fi
-	@# Check if port is available
-	@if netstat -tlnp 2>/dev/null | grep -q ":$(HOST_PORT) "; then \
-		echo "Warning: Port $(HOST_PORT) appears to be in use."; \
+	@# OS detection for host networking
+	@if [ "$$(uname -s)" = "Darwin" ]; then \
+		API_HOST=$$(route -n get default 2>/dev/null | awk '/interface:/{iface=$$2} END{if(iface) system("ipconfig getifaddr " iface)}'); \
+		$(PODMAN) run -d \
+			--name $(CONTAINER_NAME) \
+			-p $(HOST_PORT):$(CONTAINER_PORT) \
+			--add-host=migration-planner-api:$${API_HOST} \
+			$(IMAGE):$(IMAGE_TAG); \
+	else \
+		$(PODMAN) run -d \
+			--name $(CONTAINER_NAME) \
+			-p $(HOST_PORT):$(CONTAINER_PORT) \
+			--add-host=migration-planner-api:host-gateway \
+			$(IMAGE):$(IMAGE_TAG); \
 	fi
-	$(PODMAN) run -d \
-		--name $(CONTAINER_NAME) \
-		-p $(HOST_PORT):$(CONTAINER_PORT) \
-		$(IMAGE):$(IMAGE_TAG)
-	@echo "Container started successfully!"
-	@echo "Access the application at: http://localhost:$(HOST_PORT)"
-	@echo "Container name: $(CONTAINER_NAME)"
+	@echo "✅ Container started successfully!"
+	@echo "🌐 Access the application at: http://localhost:$(HOST_PORT)/openshift/migration-assessment"
+	@echo "📦 Container name: $(CONTAINER_NAME)"
 
 # Stop the container
 .PHONY: podman-stop
 podman-stop:
-	@echo "Stopping container: $(CONTAINER_NAME)"
-	-$(PODMAN) stop $(CONTAINER_NAME) 2>/dev/null || true
-	-$(PODMAN) rm $(CONTAINER_NAME) 2>/dev/null || true
-	@echo "Container stopped and removed."
+	@echo "🛑 Stopping container: $(CONTAINER_NAME)"
+	@-$(PODMAN) stop $(CONTAINER_NAME) 2>/dev/null || true
+	@-$(PODMAN) rm $(CONTAINER_NAME) 2>/dev/null || true
+	@echo "✅ Container stopped and removed."
 
 # Show container logs
 .PHONY: podman-logs
 podman-logs:
-	$(PODMAN) logs -f $(CONTAINER_NAME)
+	@echo "📋 Showing logs for container: $(CONTAINER_NAME)"
+	@$(PODMAN) logs -f $(CONTAINER_NAME)
 
 # Show container status
 .PHONY: podman-status
 podman-status:
-	@echo "Container status:"
-	$(PODMAN) ps -a --filter "name=$(CONTAINER_NAME)"
+	@echo "📊 Container status:"
+	@$(PODMAN) ps -a --filter "name=$(CONTAINER_NAME)"
 
 # Remove the container image
 .PHONY: podman-clean
 podman-clean:
-	@echo "Removing container image: $(IMAGE):$(IMAGE_TAG)"
-	-$(PODMAN) rmi $(IMAGE):$(IMAGE_TAG) 2>/dev/null || true
-	-$(PODMAN) rmi $(IMAGE):latest 2>/dev/null || true
-	@echo "Container image removed."
+	@echo "🧹 Removing container image: $(IMAGE):$(IMAGE_TAG)"
+	@-$(PODMAN) rmi $(IMAGE):$(IMAGE_TAG) 2>/dev/null || true
+	@-$(PODMAN) rmi $(IMAGE):latest 2>/dev/null || true
+	@echo "✅ Container image removed."
 
 # Complete container workflow: build and run
 .PHONY: podman-deploy
@@ -223,44 +296,70 @@ podman-dev: podman-build podman-tag-latest podman-run
 
 .PHONY: quay-login
 quay-login:
-	@if [ ! -f $(DOCKER_AUTH_FILE) ] && [ $(QUAY_USER) ] && [ $(QUAY_TOKEN) ]; then \
-		$(info Create Auth File: $(DOCKER_AUTH_FILE)) \
+	@if [ -f "$(DOCKER_AUTH_FILE)" ]; then \
+		echo "✅ Auth file already exists: $(DOCKER_AUTH_FILE)"; \
+	elif [ -z "$(QUAY_USER)" ] || [ -z "$(QUAY_TOKEN)" ]; then \
+		echo "❌ Error: QUAY_USER and QUAY_TOKEN environment variables must be set"; \
+		exit 1; \
+	else \
+		echo "🔐 Creating auth file: $(DOCKER_AUTH_FILE)"; \
 		mkdir -p "$(DOCKER_CONF)"; \
-		$(PODMAN) login --authfile $(DOCKER_AUTH_FILE) -u=$(QUAY_USER) -p=$(QUAY_TOKEN) quay.io; \
-	fi;
+		echo "$(QUAY_TOKEN)" | $(PODMAN) login --authfile $(DOCKER_AUTH_FILE) -u=$(QUAY_USER) --password-stdin quay.io; \
+		echo "✅ Logged in to quay.io successfully"; \
+	fi
 
 .PHONY: podman-push
-podman-push:
-	@echo "Pushing container image: $(IMAGE):$(IMAGE_TAG)"
-	if [ -f $(DOCKER_AUTH_FILE) ]; then \
+podman-push: quay-login
+	@echo "📤 Pushing container image: $(IMAGE):$(IMAGE_TAG)"
+	@# Verify image exists before pushing
+	@if ! $(PODMAN) image exists $(IMAGE):$(IMAGE_TAG) 2>/dev/null; then \
+		echo "❌ Error: Image $(IMAGE):$(IMAGE_TAG) not found. Run 'make podman-build' first."; \
+		exit 1; \
+	fi
+	@if [ -f "$(DOCKER_AUTH_FILE)" ]; then \
 		$(PODMAN) push --authfile=$(DOCKER_AUTH_FILE) $(IMAGE):$(IMAGE_TAG); \
 	else \
 		$(PODMAN) push $(IMAGE):$(IMAGE_TAG); \
-	fi;
-	@echo "Container image pushed successfully."
+	fi
+	@echo "✅ Container image pushed successfully."
 
 # OpenShift deployment
 .PHONY: deploy-on-openshift
-deploy-on-openshift:
-	@echo "Deploying Migration Planner UI to OpenShift..."
-	oc process -f deploy/dev/ui-template.yaml \
+deploy-on-openshift: oc
+	@echo "🚀 Deploying Migration Planner UI to OpenShift..."
+	@oc process -f deploy/dev/ui-template.yaml \
 		   -p MIGRATION_PLANNER_UI_IMAGE=$(IMAGE) \
 		   -p MIGRATION_PLANNER_REPLICAS=$(REPLICAS) \
 		   -p IMAGE_TAG=$(IMAGE_TAG) \
 		 | oc apply -f -
-	@echo "*** Migration Planner UI has been deployed successfully on OpenShift ***"
-	@echo "Getting route information..."
-	@oc get route planner-ui -o jsonpath='{.spec.host}' 2>/dev/null && echo "" || echo "Route not yet available"
+	@echo "✅ Migration Planner UI has been deployed successfully on OpenShift"
+	@echo "🔍 Getting route information..."
+	@oc get route planner-ui -o jsonpath='{.spec.host}' 2>/dev/null && echo "" || echo "⏳ Route not yet available"
 
 .PHONY: delete-from-openshift
-delete-from-openshift:
-	@echo "Deleting Migration Planner UI from OpenShift..."
-	oc process -f deploy/dev/ui-template.yaml \
+delete-from-openshift: oc
+	@echo "🗑️  Deleting Migration Planner UI from OpenShift..."
+	@oc process -f deploy/dev/ui-template.yaml \
 		   -p MIGRATION_PLANNER_UI_IMAGE=$(IMAGE) \
 		   -p MIGRATION_PLANNER_REPLICAS=$(REPLICAS) \
 		   -p IMAGE_TAG=$(IMAGE_TAG) \
 		 | oc delete -f -
-	@echo "*** Migration Planner UI has been deleted successfully from OpenShift ***"
+	@echo "✅ Migration Planner UI has been deleted successfully from OpenShift"
+
+# Display version information
+.PHONY: version
+version:
+	@echo "📋 Version Information:"
+	@echo "  Git Commit: $(SOURCE_GIT_COMMIT)"
+	@echo "  Git Commit (short): $(SOURCE_GIT_COMMIT_SHORT)"
+	@echo "  Git Tag: $(SOURCE_GIT_TAG)"
+	@echo "  Image Tag: $(IMAGE_TAG)"
+
+# Run tests in watch mode
+.PHONY: test-watch
+test-watch: install
+	@echo "👀 Running tests in watch mode..."
+	@npx vitest watch
 
 # Help target
 .PHONY: help
@@ -268,18 +367,29 @@ help:
 	@echo "Migration Planner UI - Available Make targets:"
 	@echo ""
 	@echo "Local Development:"
-	@echo "  build-standalone     Build the standalone application locally"
+	@echo "  install             Install/update all packages"
+	@echo "  ci-install          Immutable installation using npm ci (for CI)"
+	@echo "  clean               Clean build artifacts and dependencies"
+	@echo "  build-standalone    Build the standalone application locally"
 	@echo "  build               Build the federated module locally"
-	@echo "  lint-check          Run ESLint checks"
-	@echo "  lint-fix            Run ESLint with auto-fix"
-	@echo "  format-check        Check code formatting with Prettier"
-	@echo "  format-fix          Format code with Prettier"
+	@echo "  run-standalone      Run the standalone application locally"
+	@echo "  preview-standalone  Preview standalone build"
+	@echo "  start               Start federated dev server (HOT mode)"
+	@echo "  start-dev-proxy     Start dev proxy server"
+	@echo "  start-federated     Start federated static server"
+	@echo "  patch-hosts         Patch /etc/hosts for local development"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  lint                Run ESLint checks (use FIX=1 to auto-fix)"
+	@echo "  format              Check code formatting with Prettier (use FIX=1 to format)"
 	@echo "  type-check          TypeScript type checking"
 	@echo "  test                Run tests"
+	@echo "  test-watch          Run tests in watch mode"
+	@echo "  coverage            Run tests with coverage report"
 	@echo "  security-scan       Run security vulnerability scan"
 	@echo "  security-fix        Fix security vulnerabilities"
 	@echo "  security-fix-force  Fix security vulnerabilities (including breaking changes)"
-	@echo "  validate-all        Run all validation checks (lint-check + format-check + type-check + security-scan + test)"
+	@echo "  validate-all        Run all validation checks (lint + format + type-check + test + security-scan)"
 	@echo ""
 	@echo "Container Management:"
 	@echo "  podman-build        Build the container image"
@@ -292,16 +402,21 @@ help:
 	@echo "  podman-dev          Development workflow (build + tag latest + run)"
 	@echo ""
 	@echo "Container Registry:"
-	@echo "  quay-login          Login to Quay.io registry"
+	@echo "  quay-login          Login to Quay.io registry (requires QUAY_USER and QUAY_TOKEN)"
 	@echo "  podman-push         Push container image to registry"
 	@echo ""
 	@echo "OpenShift Deployment:"
+	@echo "  oc                  Install oc CLI (Linux only, macOS requires manual install)"
 	@echo "  deploy-on-openshift Deploy application on OpenShift"
 	@echo "  delete-from-openshift Remove application from OpenShift"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  version             Display version information"
 	@echo ""
 	@echo "Configuration Variables:"
 	@echo "  IMAGE=$(IMAGE)"
 	@echo "  IMAGE_TAG=$(IMAGE_TAG)"
+	@echo "  ARCH=$(ARCH)"
 	@echo "  CONTAINER_NAME=$(CONTAINER_NAME)"
 	@echo "  HOST_PORT=$(HOST_PORT)"
 	@echo "  CONTAINER_PORT=$(CONTAINER_PORT)"

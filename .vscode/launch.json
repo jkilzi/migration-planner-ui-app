@@ -8,7 +8,7 @@
       "name": "Debug (stage w/dev-proxy)",
       "request": "launch",
       "type": "node-terminal",
-      "command": "npm run start:dev-proxy",
+      "command": "make ",
       "cwd": "${workspaceFolder}",
       "serverReadyAction": {
         "action": "debugWithChrome",

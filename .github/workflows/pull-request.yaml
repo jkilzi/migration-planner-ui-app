@@ -6,34 +6,65 @@ on:
       - opened
       - reopened
       - synchronize
+      - edited
       - ready_for_review
     branches:
       - master
-      - "release-**"
+      - "release-*"
 
 env:
   NODE_OPTIONS: "--max-old-space-size=8192"
 jobs:
-  lint-check:
-    if: ${{ ! github.event.pull_request.draft }}
+  lint-pull-request:
+    name: Validate PR title
+    runs-on: ubuntu-slim
+    if: |
+      github.actor != 'red-hat-konflux[bot]' &&
+      github.actor != 'dependabot[bot]'
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          headerPattern: '^(ECOPROJECT-\d+|NO-JIRA) \| (\w+): (.+)$'
+          headerPatternCorrespondence: scope, type, subject
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            style
+            test
+          requireScope: true
+  lint:
+    needs: lint-pull-request
+    if: ${{ ! github.event.pull_request.draft && (needs.lint-pull-request.result == 'success' || needs.lint-pull-request.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ vars.NODEJS_VERSION }}
-      - run: make lint-check
-  format-check:
-    if: ${{ ! github.event.pull_request.draft }}
+      - run: make lint
+  format:
+    needs: lint-pull-request
+    if: ${{ ! github.event.pull_request.draft && (needs.lint-pull-request.result == 'success' || needs.lint-pull-request.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ vars.NODEJS_VERSION }}
-      - run: make format-check
+      - run: make format
   type-check:
-    if: ${{ ! github.event.pull_request.draft }}
+    needs: lint-pull-request
+    if: ${{ ! github.event.pull_request.draft && (needs.lint-pull-request.result == 'success' || needs.lint-pull-request.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -42,7 +73,8 @@ jobs:
           node-version: ${{ vars.NODEJS_VERSION }}
       - run: make type-check
   security-scan:
-    if: ${{ ! github.event.pull_request.draft }}
+    needs: lint-pull-request
+    if: ${{ ! github.event.pull_request.draft && (needs.lint-pull-request.result == 'success' || needs.lint-pull-request.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -51,7 +83,8 @@ jobs:
           node-version: ${{ vars.NODEJS_VERSION }}
       - run: make security-scan
   test:
-    if: ${{ ! github.event.pull_request.draft }}
+    needs: lint-pull-request
+    if: ${{ ! github.event.pull_request.draft && (needs.lint-pull-request.result == 'success' || needs.lint-pull-request.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -60,7 +93,8 @@ jobs:
           node-version: ${{ vars.NODEJS_VERSION }}
       - run: make test
   build:
-    if: ${{ ! github.event.pull_request.draft }}
+    needs: lint-pull-request
+    if: ${{ ! github.event.pull_request.draft && (needs.lint-pull-request.result == 'success' || needs.lint-pull-request.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
