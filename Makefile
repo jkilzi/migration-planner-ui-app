@@ -6,15 +6,24 @@ REPLICAS ?= 1
 
 # Container runtime configuration
 CONTAINER_NAME ?= migration-planner-ui
-CONTAINER_PORT ?= 8080
-HOST_PORT ?= 8080
+CONTAINER_PORT ?= 8081
+HOST_PORT ?= 8081
 CONTAINERFILE_PATH ?= deploy/dev/Containerfile
 CONTAINERIGNORE_PATH ?= deploy/dev/.containerignore
 
 SOURCE_GIT_COMMIT ?=$(shell git rev-parse "HEAD^{commit}" 2>/dev/null)
 SOURCE_GIT_COMMIT_SHORT ?=$(shell git rev-parse --short "HEAD^{commit}" 2>/dev/null)
 SOURCE_GIT_TAG ?=$(shell git describe --always --tags --abbrev=7 --match '[0-9]*\.[0-9]*\.[0-9]*' --match 'v[0-9]*\.[0-9]*\.[0-9]*' || echo 'v0.0.0-unknown-$(SOURCE_GIT_COMMIT_SHORT)')
-IMAGE_TAG ?= $(SOURCE_GIT_COMMIT)
+IMAGE_TAG ?= $(SOURCE_GIT_COMMIT_SHORT)
+
+# OS detection for host networking
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    API_HOST := host-gateway
+else
+    # Get the IP of the default route interface on macOS
+    API_HOST := $(shell route -n get default 2>/dev/null | awk '/interface:/{iface=$$2} END{if(iface) system("ipconfig getifaddr " iface)}')
+endif
 
 .PHONY: oc
 oc: # Verify oc installed, in linux install it if not already installed
@@ -43,17 +52,17 @@ install:
 .PHONY: build-standalone
 build-standalone: install
 	@echo "Building standalone application..."
-	rm -rf dist-standalone
+	rm -rf dev/dist
 	MIGRATION_PLANNER_UI_GIT_COMMIT=$(SOURCE_GIT_COMMIT) \
 	 MIGRATION_PLANNER_UI_VERSION=$(SOURCE_GIT_TAG) \
 	 npm run build:standalone
-	@echo "✅ Standalone build completed in dist-standalone/"
+	@echo "✅ Standalone build completed in dev/dist/"
 
 # Run the standalone application locally
 .PHONY: run-standalone
 run-standalone: install
 	@echo "Running standalone application..."
-	rm -rf dist-standalone
+	rm -rf dev/dist
 	MIGRATION_PLANNER_UI_GIT_COMMIT=$(SOURCE_GIT_COMMIT) \
 	 MIGRATION_PLANNER_UI_VERSION=$(SOURCE_GIT_TAG) \
 	 PLANNER_LOCAL_DEV=true \
@@ -181,9 +190,10 @@ podman-run:
 	$(PODMAN) run -d \
 		--name $(CONTAINER_NAME) \
 		-p $(HOST_PORT):$(CONTAINER_PORT) \
+		--add-host=migration-planner-api:$(API_HOST) \
 		$(IMAGE):$(IMAGE_TAG)
 	@echo "Container started successfully!"
-	@echo "Access the application at: http://localhost:$(HOST_PORT)"
+	@echo "Access the application at: http://localhost:$(HOST_PORT)/openshift/migration-assessment"
 	@echo "Container name: $(CONTAINER_NAME)"
 
 # Stop the container

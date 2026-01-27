@@ -131,8 +131,7 @@ export const Provider: React.FC<PropsWithChildren> = (props) => {
 
   // Create jobApi instance (same pattern as assessmentService)
   const jobApi = React.useMemo(() => {
-    const baseUrl =
-      process.env.PLANNER_API_BASE_URL || "/api/migration-assessment";
+    const baseUrl = process.env.PLANNER_API_BASE_URL;
     const fetchApi =
       (
         assessmentApi as unknown as {
