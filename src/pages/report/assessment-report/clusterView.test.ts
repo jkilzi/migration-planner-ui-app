@@ -125,4 +125,23 @@ describe("buildClusterViewModel", () => {
     expect(model.viewInfra).toBeUndefined();
     expect(model.viewVms).toBeUndefined();
   });
+
+  it("returns cluster options with 'All clusters' first followed by cluster keys", () => {
+    const clusters = {
+      "Cluster A": { infra: baseInfra, vms: baseVms },
+      "Cluster B": { infra: baseInfra, vms: baseVms },
+    };
+
+    const model = buildClusterViewModel({
+      infra: baseInfra,
+      vms: baseVms,
+      clusters,
+      selectedClusterId: "all",
+    });
+
+    expect(model.clusterOptions[0].id).toBe("all");
+    expect(model.clusterOptions[0].label).toBe("All clusters");
+    expect(model.clusterOptions[1].id).toBe("Cluster A");
+    expect(model.clusterOptions[2].id).toBe("Cluster B");
+  });
 });

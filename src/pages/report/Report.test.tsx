@@ -313,11 +313,15 @@ describe("Report", () => {
   });
 
   describe("Cluster recommendations button", () => {
-    it('does not show button when "all" clusters is selected', async () => {
+    it("auto-selects first cluster on initial load to show recommendations button", async () => {
       const assessment = createAssessment("assessment-1", {
         "Cluster A": {
           infra: createInfra(2, 2),
           vms: createVMs(5),
+        },
+        "Cluster B": {
+          infra: createInfra(3, 3),
+          vms: createVMs(7),
         },
       });
 
@@ -330,8 +334,32 @@ describe("Report", () => {
 
       await waitFor(() => {
         expect(
-          screen.queryByText("View target cluster recommendations"),
-        ).not.toBeInTheDocument();
+          screen.getByText("View target cluster recommendations"),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("shows disabled recommendations button when cluster has no VMs", async () => {
+      const assessment = createAssessment("assessment-1", {
+        "Cluster A": {
+          infra: createInfra(2, 2),
+          vms: createVMs(0), // No VMs
+        },
+      });
+
+      vi.mocked(useDiscoverySources).mockReturnValue({
+        ...mockDiscoverySourcesContext,
+        assessments: [assessment],
+      });
+
+      render(<Report />);
+
+      await waitFor(() => {
+        // Button should be disabled (aria-disabled) when cluster has no VMs
+        const button = screen.getByRole("button", {
+          name: "View target cluster recommendations",
+        });
+        expect(button).toHaveAttribute("aria-disabled", "true");
       });
     });
 

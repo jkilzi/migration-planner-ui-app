@@ -22,7 +22,7 @@ import {
   StackItem,
   Tooltip,
 } from "@patternfly/react-core";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMount } from "react-use";
 
@@ -53,7 +53,10 @@ const Inner: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const discoverySourcesContext = useDiscoverySources();
   const [exportError, setExportError] = useState<ExportError | null>(null);
-  const [selectedClusterId, setSelectedClusterId] = useState<string>("all");
+  // Track user's explicit selection; null means "use default (first cluster)"
+  const [userSelectedClusterId, setUserSelectedClusterId] = useState<
+    string | null
+  >(null);
   const [isClusterSelectOpen, setIsClusterSelectOpen] = useState(false);
   const [isSizingWizardOpen, setIsSizingWizardOpen] = useState(false);
 
@@ -79,6 +82,22 @@ const Inner: React.FC = () => {
   const assessment = discoverySourcesContext.assessments.find(
     (a) => String((a as AssessmentLike).id) === String(id),
   ) as AssessmentLike | undefined;
+
+  // Compute clusters early for default selection (before early returns)
+  const assessmentClusters = assessment?.snapshots?.length
+    ? assessment.snapshots[assessment.snapshots.length - 1].inventory?.clusters
+    : undefined;
+
+  // Compute effective selection: user's choice takes precedence, otherwise first cluster
+  const selectedClusterId = useMemo(() => {
+    if (userSelectedClusterId !== null) {
+      return userSelectedClusterId;
+    }
+    const clusterKeys = assessmentClusters
+      ? Object.keys(assessmentClusters)
+      : [];
+    return clusterKeys.length > 0 ? clusterKeys[0] : "all";
+  }, [userSelectedClusterId, assessmentClusters]);
 
   if (discoverySourcesContext.isLoadingAssessments && !assessment) {
     return (
@@ -192,7 +211,7 @@ const Inner: React.FC = () => {
     value: string | number | undefined,
   ): void => {
     if (typeof value === "string") {
-      setSelectedClusterId(value);
+      setUserSelectedClusterId(value);
     }
     setIsClusterSelectOpen(false);
   };
