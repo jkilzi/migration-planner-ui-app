@@ -13,9 +13,9 @@ export const getProgressValue = (status: JobStatus): number => {
   switch (status) {
     case JobStatus.Pending:
       return 20;
-    case JobStatus.Parsing:
-      return 50;
     case JobStatus.Validating:
+      return 50;
+    case JobStatus.Parsing:
       return 80;
     case JobStatus.Completed:
       return 100;
