@@ -73,7 +73,7 @@ export const ClusterSizingWizard: React.FC<ClusterSizingWizardProps> = ({
         clusterId,
         formValues,
         workerCpu,
-        workerMemory
+        workerMemory,
       );
 
       // POST /api/v1/assessments/{id}/cluster-requirements
@@ -81,7 +81,7 @@ export const ClusterSizingWizard: React.FC<ClusterSizingWizardProps> = ({
         {
           id: assessmentId,
           clusterRequirementsRequest,
-        }
+        },
       );
 
       setSizerOutput(result);
@@ -91,7 +91,7 @@ export const ClusterSizingWizard: React.FC<ClusterSizingWizardProps> = ({
         setError(new Error(err.message, { cause: message }));
       } else {
         setError(
-          err instanceof Error ? err : new Error("Failed to calculate sizing")
+          err instanceof Error ? err : new Error("Failed to calculate sizing"),
         );
       }
     } finally {
@@ -103,14 +103,14 @@ export const ClusterSizingWizard: React.FC<ClusterSizingWizardProps> = ({
     async (
       _event: React.MouseEvent<HTMLButtonElement>,
       currentStep: WizardStepType,
-      _prevStep: WizardStepType
+      _prevStep: WizardStepType,
     ): Promise<void> => {
       // Trigger calculation when entering the review step
       if (currentStep.id === "review-step") {
         await handleCalculate();
       }
     },
-    [handleCalculate]
+    [handleCalculate],
   );
 
   if (!isOpen) {

@@ -21,42 +21,69 @@ For these operations, provide ready-to-use commands for the user to copy-paste.
 ## Steps
 
 1. Check git status to see staged and unstaged changes
-2. Run the following subagents in parallel:
-   1. Validator Agent: Runs `make validate-all` to ensure code quality checks pass
-   2. Reviewer Agent: Performs a code review
-3. Stage all relevant files with `git add`
-4. Write a commit message following the format:
-   - Title: `<ticket-id> | <type>: <description>`
-     - `<ticket-id>`: matches pattern `ECOPROJECT-\d+`
-     - `<type>`: one of: build, chore, ci, docs, feat, fix, perf, refactor, style, test
-   - If no JIRA ticket: `NO-JIRA | <type>: <description>`
-   - Body: bullet-list summarizing the changes
-5. **Provide commit command to user** (do not attempt to execute):
-
-   ```bash
-   git commit -s -m '<title>
-
-   <body>'
-   ```
-
+2. Run `make validate-all` to ensure code quality checks pass. Fix any issues before proceeding.
+3. Stage all relevant files with `git add -A`
+4. Write a commit message following the format below.
+5. **Provide commit command to user** (do not attempt to execute)
 6. Wait for user to confirm commit is done
-7. **Provide push command to user**:
-
-   ```bash
-   git push -u origin <branch-name>
-   ```
-
+7. **Provide push command to user**
 8. Wait for user to confirm push is done
-9. **Provide PR creation command to user**:
-
-   ```bash
-   gh pr create --repo kubev2v/migration-planner-ui-app \
-     --title "<title>" \
-     --body "<PR body with summary and test plan>"
-   ```
-
+9. **Provide PR creation command to user**
 10. Ask user to share the PR URL when created
-11. **Update Jira issue with PR URL and transition to Code Review** (see below)
+11. **Update Jira issue with PR URL and transition to Code Review** (see Jira Integration below)
+
+## Commit Message Format
+
+**Title**: `<ticket-id> | <type>: <description>`
+
+- `<ticket-id>`: matches pattern `ECOPROJECT-\d+`
+- `<type>`: one of: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `test`
+- If no JIRA ticket: `NO-JIRA | <type>: <description>`
+
+**Body**: bullet-list summarizing the changes (use `-` prefix)
+
+> **Important**: Do NOT use conventional commit format like `fix(scope):`. Always use `TICKET-ID | type:` format.
+
+### Commit command template
+
+```bash
+git add -A && git commit -s -m '<ticket-id> | <type>: <description>
+
+- Change 1
+- Change 2
+- Change 3'
+```
+
+> Note: The `-s` flag adds a Signed-off-by line (required).
+
+### Push command template
+
+```bash
+git push -u origin <branch-name>
+```
+
+### PR creation command template
+
+Use heredoc syntax to avoid shell escaping issues:
+
+```bash
+gh pr create --repo kubev2v/migration-planner-ui-app \
+  --title "<ticket-id> | <type>: <description>" \
+  --body "$(cat <<'EOF'
+## Summary
+
+- Change 1
+- Change 2
+
+Fixes [<TICKET-ID>](https://issues.redhat.com/browse/<TICKET-ID>)
+
+## Test Plan
+
+- [ ] Test step 1
+- [ ] Test step 2
+EOF
+)"
+```
 
 ## Jira Integration
 

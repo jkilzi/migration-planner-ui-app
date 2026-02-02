@@ -62,14 +62,14 @@ describe("ClusterSizingWizard", () => {
     render(<ClusterSizingWizard {...defaultProps} />);
 
     expect(
-      screen.getByText("Target cluster recommendations")
+      screen.getByText("Target cluster recommendations"),
     ).toBeInTheDocument();
     // PatternFly wizard shows step names in multiple places (sidebar and toggle)
     expect(screen.getAllByText("Migration preferences").length).toBeGreaterThan(
-      0
+      0,
     );
     expect(
-      screen.getAllByText("Review cluster recommendations").length
+      screen.getAllByText("Review cluster recommendations").length,
     ).toBeGreaterThan(0);
   });
 
@@ -77,7 +77,7 @@ describe("ClusterSizingWizard", () => {
     render(<ClusterSizingWizard {...defaultProps} isOpen={false} />);
 
     expect(
-      screen.queryByText("Target cluster recommendations")
+      screen.queryByText("Target cluster recommendations"),
     ).not.toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe("ClusterSizingWizard", () => {
       // Calculation should be triggered via onStepChange
       await waitFor(() => {
         expect(
-          mockCalculateAssessmentClusterRequirements
+          mockCalculateAssessmentClusterRequirements,
         ).toHaveBeenCalledTimes(1);
       });
     });
@@ -109,7 +109,7 @@ describe("ClusterSizingWizard", () => {
       // Calculation should be triggered via onStepChange
       await waitFor(() => {
         expect(
-          mockCalculateAssessmentClusterRequirements
+          mockCalculateAssessmentClusterRequirements,
         ).toHaveBeenCalledTimes(1);
       });
     });
@@ -123,7 +123,7 @@ describe("ClusterSizingWizard", () => {
 
       await waitFor(() => {
         expect(
-          mockCalculateAssessmentClusterRequirements
+          mockCalculateAssessmentClusterRequirements,
         ).toHaveBeenCalledTimes(1);
       });
 
@@ -148,7 +148,7 @@ describe("ClusterSizingWizard", () => {
 
       await waitFor(() => {
         expect(
-          mockCalculateAssessmentClusterRequirements
+          mockCalculateAssessmentClusterRequirements,
         ).toHaveBeenCalledTimes(1);
       });
 
@@ -159,7 +159,7 @@ describe("ClusterSizingWizard", () => {
       // Navigate to review step again
       await waitFor(() => {
         expect(
-          screen.getByRole("button", { name: "Next" })
+          screen.getByRole("button", { name: "Next" }),
         ).toBeInTheDocument();
       });
 
@@ -169,7 +169,7 @@ describe("ClusterSizingWizard", () => {
       // Calculation should be triggered again
       await waitFor(() => {
         expect(
-          mockCalculateAssessmentClusterRequirements
+          mockCalculateAssessmentClusterRequirements,
         ).toHaveBeenCalledTimes(2);
       });
     });

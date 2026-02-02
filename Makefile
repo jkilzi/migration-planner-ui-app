@@ -68,7 +68,7 @@ ci-install:
 .PHONY: clean
 clean:
 	@echo "🧹 Cleaning build artifacts and dependencies..."
-	@npx rimraf node_modules dist dev/dist
+	@npx rimraf node_modules dist dev/dist .cache
 	@echo "✅ Clean completed!"
 
 # Build the standalone application locally

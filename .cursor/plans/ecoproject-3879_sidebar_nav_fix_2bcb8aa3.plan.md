@@ -68,14 +68,14 @@ const handleStepChange = useCallback(
   async (
     _event: React.MouseEvent<HTMLButtonElement>,
     currentStep: WizardStepType,
-    _prevStep: WizardStepType
+    _prevStep: WizardStepType,
   ): Promise<void> => {
     // Trigger calculation when entering the review step
     if (currentStep.id === "review-step") {
       await handleCalculate();
     }
   },
-  [handleCalculate]
+  [handleCalculate],
 );
 ```
 
