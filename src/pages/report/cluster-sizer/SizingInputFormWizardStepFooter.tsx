@@ -10,19 +10,16 @@ import React from "react";
 
 export interface SizingInputFormWizardStepFooterProps {
   onClose: () => void;
-  onCalculate: () => Promise<void>;
   isLoading: boolean;
 }
 
 export const SizingInputFormWizardStepFooter: React.FC<
   SizingInputFormWizardStepFooterProps
-> = ({ onClose, onCalculate, isLoading }) => {
+> = ({ onClose, isLoading }) => {
   const { goToNextStep } = useWizardContext();
 
   const handleNext = (): void => {
-    void onCalculate().then(() => {
-      void goToNextStep();
-    });
+    void goToNextStep();
   };
 
   return (
