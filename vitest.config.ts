@@ -4,12 +4,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    setupFiles: ["config/vitest.setup.ts"],
-    include: ["**/*.test.{ts,tsx}"],
+    setupFiles: ["src/__tests__/vitest.setup.ts"],
     pool: "threads",
     coverage: {
       provider: "v8",
-      include: ["**/*.{ts,tsx}"],
     },
   },
 });

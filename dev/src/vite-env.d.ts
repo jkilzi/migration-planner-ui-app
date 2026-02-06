@@ -14,13 +14,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
-
-interface globalThis {
-  readonly process: {
-    readonly env: {
-      readonly MIGRATION_PLANNER_API_BASE_URL: string;
-      readonly MIGRATION_PLANNER_UI_VERSION: string;
-      readonly MIGRATION_PLANNER_UI_GIT_COMMIT: string;
-    };
-  };
-}

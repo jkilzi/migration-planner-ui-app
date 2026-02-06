@@ -7,9 +7,14 @@
       "command": "make",
       "args": ["-C", "${workspaceFolder}/../migration-planner", "deploy-db"],
       "presentation": {
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false,
+        "close": true
+      }
+    },
+    {
+      "label": "Wait for Backend API to be ready",
+      "type": "shell",
+      "command": "while ! curl -s http://0.0.0.0:3443/ > /dev/null; do sleep 1; done",
+      "presentation": {
         "close": true
       }
     }

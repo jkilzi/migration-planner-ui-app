@@ -10,6 +10,8 @@ yarn-error.log*
 !.vscode/settings.json
 !.vscode/tasks.json
 
+.cursor/plans/
+
 node_modules
 /dist
 /coverage
@@ -18,7 +20,7 @@ node_modules
 
 # Env files
 .envrc
-.env
+.env*.local
 
 # MacOS
 .DS_Store

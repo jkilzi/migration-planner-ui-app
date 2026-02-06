@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    /* Type Checking */
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Modules */
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "noUncheckedSideEffectImports": true,
+
+    /* Emit */
+    "sourceMap": true,
+
+    /* Interop Constraints */
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+
+    /* Language and Environment */
+    "target": "ES2022",
+    "module": "ES2022",
+
+    /* Completeness */
+    "skipLibCheck": true
+  }
+}
