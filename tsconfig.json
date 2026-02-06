@@ -1,20 +1,11 @@
 {
+  "extends": "./typescript/tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist/",
-    "module": "esnext",
-    "target": "esnext",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "jsx": "react-jsx",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "noImplicitAny": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "removeComments": false,
-    "types": ["@testing-library/jest-dom", "node", "vitest/globals"]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
-  "include": ["./src/**/*.ts", "./src/**/*.tsx"]
+  "exclude": ["./dev", "./vitest.config.ts"]
 }

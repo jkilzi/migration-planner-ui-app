@@ -122,7 +122,6 @@ const srcConfig = {
     tsEslintPlugin.configs.recommendedTypeChecked,
     reactPlugin.configs.flat["jsx-runtime"],
     reactHooksPlugin.configs.flat.recommended,
-    reactRefresh.configs.vite,
   ],
   languageOptions: {
     ecmaVersion: 2020,
@@ -158,6 +157,12 @@ const srcTestsConfig = {
       ...globals.node,
       ...globals.vitest,
     },
+  },
+  rules: {
+    ...srcConfig.rules,
+    // In tests, methods are commonly passed to expect() (e.g. expect(obj.method).toHaveBeenCalled())
+    // which is safe — the linter just can't tell that expect() won't invoke them with a wrong `this`.
+    "@typescript-eslint/unbound-method": "off",
   },
 };
 

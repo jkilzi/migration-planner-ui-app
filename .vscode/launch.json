@@ -5,48 +5,69 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug (stage w/dev-proxy)",
+      "name": "Backend API",
       "request": "launch",
       "type": "node-terminal",
-      "command": "make start-dev-proxy",
+      "envFile": "${workspaceFolder}/../migration-planner/.envrc",
+      "command": "make run",
+      "cwd": "${workspaceFolder}/../migration-planner",
+      "presentation": {
+        "hidden": true
+      }
+    },
+    {
+      "name": "Backend API (with DB deployment)",
+      "request": "launch",
+      "type": "node-terminal",
+      "envFile": "${workspaceFolder}/../migration-planner/.envrc",
+      "command": "make run",
+      "cwd": "${workspaceFolder}/../migration-planner",
+      "env": {
+        "MIGRATION_PLANNER_ADDRESS": "0.0.0.0:3443"
+      },
+      "preLaunchTask": "Deploy DB",
+      "presentation": {
+        "hidden": true
+      }
+    },
+    {
+      "name": "UI (standalone)",
+      "request": "launch",
+      "type": "node-terminal",
+      "command": "make run-standalone",
       "cwd": "${workspaceFolder}",
       "serverReadyAction": {
         "action": "debugWithChrome",
-        "killOnServerStop": true,
-        "pattern": "App should run on:",
-        "uriFormat": "https://stage.foo.redhat.com:1337/openshift/migration-assessment/"
+        "killOnServerStop": false,
+        "pattern": "VITE v\\d+.\\d+.\\d+   \\w+   ready in \\d+.*",
+        "uriFormat": "http://localhost:3000/",
+        "webRoot": "${workspaceFolder}"
+      },
+      "preLaunchTask": "Wait for Backend API to be ready",
+      "presentation": {
+        "hidden": true
       }
     },
     {
       "name": "Debug (stage)",
       "request": "launch",
-      "type": "node-terminal",
-      "command": "npm run start",
-      "cwd": "${workspaceFolder}",
-      "serverReadyAction": {
-        "action": "debugWithChrome",
-        "killOnServerStop": true,
-        "pattern": "App should run on:",
-        "uriFormat": "https://stage.foo.redhat.com:1337/openshift/migration-assessment/"
-      }
-    },
+      "type": "node",
+      "envFile": "${workspaceFolder}/.envrc",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "start"],
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
     {
       "name": "Debug (standalone)",
-      "request": "launch",
-      "type": "node-terminal",
-      "envFile": "${workspaceFolder}/../migration-planner/.envrc",
-      "command": "npx concurrently --kill-others -c auto -n \"api,wds\" -p \"{name}:{pid}\" \"make -C ../migration-planner run\" \"make run-standalone\"",
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "MIGRATION_PLANNER_ADDRESS": "0.0.0.0:3443"
-      },
-      // "preLaunchTask": "Deploy DB", // Uncomment to deploy the DB before starting the back-end API
-      "serverReadyAction": {
-        "action": "debugWithChrome",
-        "killOnServerStop": true,
-        "pattern": "App should run on:",
-        "uriFormat": "http://localhost:3000/"
-      }
+      "configurations": ["Backend API", "UI (standalone)"],
+      "stopAll": true
+    },
+    {
+      "name": "Debug (standalone with DB deployment)",
+      "configurations": ["Backend API (with DB deployment)", "UI (standalone)"],
+      "stopAll": true
     }
   ]
 }
