@@ -189,7 +189,7 @@ const createAssessment = (
         createdAt: new Date(),
         inventory: {
           vcenterId: "vcenter-1",
-          clusters: clusterData ?? null,
+          clusters: clusterData ?? {},
           vcenter: {
             infra: aggregateInfra,
             vms: aggregateVms,

@@ -1,5 +1,6 @@
 import type {
   HAReplicaCount,
+  MemoryOvercommitRatio,
   OvercommitRatio,
   SizingFormValues,
   WorkerNodePreset,
@@ -55,9 +56,9 @@ export const MEMORY_OPTIONS: { value: number; label: string }[] = [
 ];
 
 /**
- * Over-commit ratio options for resource sharing
+ * CPU over-commit ratio options for resource sharing
  */
-export const OVERCOMMIT_OPTIONS: {
+export const CPU_OVERCOMMIT_OPTIONS: {
   value: OvercommitRatio;
   label: string;
   description: string;
@@ -87,6 +88,35 @@ export const OVERCOMMIT_OPTIONS: {
     label: "High Density (1:6)",
     description: "Heavy sharing. Maximum savings for test environments.",
     helpText: "Only recommended for non-production workloads.",
+  },
+];
+
+/**
+ * Memory over-commit ratio options (1:6 not supported by API)
+ */
+export const MEMORY_OVERCOMMIT_OPTIONS: {
+  value: MemoryOvercommitRatio;
+  label: string;
+  description: string;
+  helpText: string;
+}[] = [
+  {
+    value: 1,
+    label: "Performance (1:1)",
+    description: "No sharing. Dedicated memory for every VM.",
+    helpText: "Best for latency-sensitive or critical workloads.",
+  },
+  {
+    value: 2,
+    label: "Balanced (1:2)",
+    description: "Light sharing. Safe for critical apps.",
+    helpText: "Good balance between cost and performance.",
+  },
+  {
+    value: 4,
+    label: "Standard (1:4)",
+    description: "Moderate sharing. Best for general use.",
+    helpText: "Typical choice for general purpose workloads.",
   },
 ];
 
@@ -143,7 +173,8 @@ export const DEFAULT_FORM_VALUES: SizingFormValues = {
   customCpu: 32,
   customMemoryGb: 32,
   haReplicas: 3,
-  overcommitRatio: 4, // Standard (1:4)
+  cpuOvercommitRatio: 4, // Standard (1:4)
+  memoryOvercommitRatio: 2, // Balanced (1:2)
   scheduleOnControlPlane: false,
 };
 

@@ -3,6 +3,7 @@
  *
  * API Endpoint: POST /api/v1/assessments/{id}/cluster-requirements
  * @see PR #819 - ECOPROJECT-3719 | feat: add post endpoint for sizing calculations
+ * @see ECOPROJECT-3967 - CPU and memory overcommit specified individually
  */
 import type { ClusterRequirementsRequest } from "../types";
 
@@ -11,7 +12,8 @@ import type { ClusterRequirementsRequest } from "../types";
  */
 export const mockClusterRequirementsRequest: ClusterRequirementsRequest = {
   clusterId: "71cfef2c-5c64-4a0a-8238-2f7fbb2f6372",
-  overCommitRatio: "1:4",
+  cpuOverCommitRatio: "1:4",
+  memoryOverCommitRatio: "1:4",
   workerNodeCPU: 16,
   workerNodeMemory: 64,
   controlPlaneSchedulable: false,
@@ -22,7 +24,8 @@ export const mockClusterRequirementsRequest: ClusterRequirementsRequest = {
  */
 export const mockSmallNodeRequest: ClusterRequirementsRequest = {
   clusterId: "123e4567-e89b-12d3-a456-426614174000",
-  overCommitRatio: "1:2",
+  cpuOverCommitRatio: "1:2",
+  memoryOverCommitRatio: "1:2",
   workerNodeCPU: 4,
   workerNodeMemory: 16,
   controlPlaneSchedulable: false,
@@ -33,7 +36,8 @@ export const mockSmallNodeRequest: ClusterRequirementsRequest = {
  */
 export const mockLargeNodeRequest: ClusterRequirementsRequest = {
   clusterId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  overCommitRatio: "1:6",
+  cpuOverCommitRatio: "1:6",
+  memoryOverCommitRatio: "1:4",
   workerNodeCPU: 64,
   workerNodeMemory: 256,
   controlPlaneSchedulable: false,
@@ -45,7 +49,8 @@ export const mockLargeNodeRequest: ClusterRequirementsRequest = {
 export const mockCustomNodeWithControlPlaneRequest: ClusterRequirementsRequest =
   {
     clusterId: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-    overCommitRatio: "1:1",
+    cpuOverCommitRatio: "1:1",
+    memoryOverCommitRatio: "1:1",
     workerNodeCPU: 32,
     workerNodeMemory: 128,
     controlPlaneSchedulable: true,
@@ -56,7 +61,8 @@ export const mockCustomNodeWithControlPlaneRequest: ClusterRequirementsRequest =
  */
 export const mockMaxValuesRequest: ClusterRequirementsRequest = {
   clusterId: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  overCommitRatio: "1:6",
+  cpuOverCommitRatio: "1:6",
+  memoryOverCommitRatio: "1:4",
   workerNodeCPU: 200,
   workerNodeMemory: 512,
   controlPlaneSchedulable: true,
@@ -67,7 +73,8 @@ export const mockMaxValuesRequest: ClusterRequirementsRequest = {
  */
 export const mockMinValuesRequest: ClusterRequirementsRequest = {
   clusterId: "b2a7e4b6-91f4-4be7-bfcb-043dee7e50e9",
-  overCommitRatio: "1:1",
+  cpuOverCommitRatio: "1:1",
+  memoryOverCommitRatio: "1:1",
   workerNodeCPU: 2,
   workerNodeMemory: 4,
   controlPlaneSchedulable: false,
@@ -80,8 +87,12 @@ export const createMockClusterRequirementsRequest = (
   overrides: Partial<ClusterRequirementsRequest> = {},
 ): ClusterRequirementsRequest => ({
   clusterId: overrides.clusterId ?? mockClusterRequirementsRequest.clusterId,
-  overCommitRatio:
-    overrides.overCommitRatio ?? mockClusterRequirementsRequest.overCommitRatio,
+  cpuOverCommitRatio:
+    overrides.cpuOverCommitRatio ??
+    mockClusterRequirementsRequest.cpuOverCommitRatio,
+  memoryOverCommitRatio:
+    overrides.memoryOverCommitRatio ??
+    mockClusterRequirementsRequest.memoryOverCommitRatio,
   workerNodeCPU:
     overrides.workerNodeCPU ?? mockClusterRequirementsRequest.workerNodeCPU,
   workerNodeMemory:
@@ -93,14 +104,26 @@ export const createMockClusterRequirementsRequest = (
 });
 
 /**
- * Collection of all over-commit ratio variants for testing
+ * Collection of CPU over-commit ratio variants for testing (memory fixed at 1:4)
  */
-export const mockRequestsByOvercommitRatio: Record<
-  ClusterRequirementsRequest["overCommitRatio"],
+export const mockRequestsByCpuOvercommitRatio: Record<
+  ClusterRequirementsRequest["cpuOverCommitRatio"],
   ClusterRequirementsRequest
 > = {
-  "1:1": createMockClusterRequirementsRequest({ overCommitRatio: "1:1" }),
-  "1:2": createMockClusterRequirementsRequest({ overCommitRatio: "1:2" }),
-  "1:4": createMockClusterRequirementsRequest({ overCommitRatio: "1:4" }),
-  "1:6": createMockClusterRequirementsRequest({ overCommitRatio: "1:6" }),
+  "1:1": createMockClusterRequirementsRequest({
+    cpuOverCommitRatio: "1:1",
+    memoryOverCommitRatio: "1:4",
+  }),
+  "1:2": createMockClusterRequirementsRequest({
+    cpuOverCommitRatio: "1:2",
+    memoryOverCommitRatio: "1:4",
+  }),
+  "1:4": createMockClusterRequirementsRequest({
+    cpuOverCommitRatio: "1:4",
+    memoryOverCommitRatio: "1:4",
+  }),
+  "1:6": createMockClusterRequirementsRequest({
+    cpuOverCommitRatio: "1:6",
+    memoryOverCommitRatio: "1:4",
+  }),
 };

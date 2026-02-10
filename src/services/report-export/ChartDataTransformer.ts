@@ -57,11 +57,11 @@ export class ChartDataTransformer {
   } {
     const snapshotLike = inventory as SnapshotLike;
 
-    const infra = (snapshotLike.infra ||
+    const infra =
+      snapshotLike.infra ||
       snapshotLike.inventory?.infra ||
       snapshotLike.inventory?.vcenter?.infra ||
-      (snapshotLike as { vcenter: { infra: InfraData } }).vcenter
-        ?.infra) as InfraData;
+      (snapshotLike as { vcenter: { infra: InfraData } }).vcenter?.infra;
 
     const vms = (snapshotLike.vms ||
       snapshotLike.inventory?.vms ||

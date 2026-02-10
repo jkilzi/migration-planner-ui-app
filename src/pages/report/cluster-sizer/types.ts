@@ -5,11 +5,13 @@
  * API types are re-exported from @migration-planner-ui/api-client.
  *
  * @see ECOPROJECT-3631
+ * @see ECOPROJECT-3967 - CPU and memory overcommit specified individually
  */
 
 import {
   type ClusterRequirementsRequest,
-  ClusterRequirementsRequestOverCommitRatioEnum,
+  ClusterRequirementsRequestCpuOverCommitRatioEnum,
+  ClusterRequirementsRequestMemoryOverCommitRatioEnum,
 } from "@migration-planner-ui/api-client/models";
 
 // Re-export API types from api-client
@@ -29,9 +31,14 @@ export type {
 export type WorkerNodePreset = "small" | "medium" | "large" | "custom";
 
 /**
- * Over-commit ratio options (CPU sharing factor) - numeric value
+ * Over-commit ratio options for CPU (numeric value)
  */
 export type OvercommitRatio = 1 | 2 | 4 | 6;
+
+/**
+ * Over-commit ratio options for memory (1:6 not supported by API)
+ */
+export type MemoryOvercommitRatio = 1 | 2 | 4;
 
 /**
  * High availability replica count
@@ -50,8 +57,10 @@ export interface SizingFormValues {
   customMemoryGb: number;
   /** High availability replica count */
   haReplicas: HAReplicaCount;
-  /** Over-commit ratio for resource sharing */
-  overcommitRatio: OvercommitRatio;
+  /** CPU over-commit ratio for resource sharing */
+  cpuOvercommitRatio: OvercommitRatio;
+  /** Memory over-commit ratio for resource sharing */
+  memoryOvercommitRatio: MemoryOvercommitRatio;
   /** Whether to schedule VMs on control plane nodes */
   scheduleOnControlPlane: boolean;
 }
@@ -62,25 +71,46 @@ export interface SizingFormValues {
 export type WizardStep = "input" | "result";
 
 /**
- * Mapping from numeric over-commit ratio to API enum value
+ * Mapping from numeric CPU over-commit ratio to API enum value
  */
-const OVERCOMMIT_RATIO_MAP: Record<
+const CPU_OVERCOMMIT_RATIO_MAP: Record<
   OvercommitRatio,
-  ClusterRequirementsRequest["overCommitRatio"]
+  ClusterRequirementsRequest["cpuOverCommitRatio"]
 > = {
-  1: ClusterRequirementsRequestOverCommitRatioEnum.OneToOne,
-  2: ClusterRequirementsRequestOverCommitRatioEnum.OneToTwo,
-  4: ClusterRequirementsRequestOverCommitRatioEnum.OneToFour,
-  6: ClusterRequirementsRequestOverCommitRatioEnum.OneToSix,
+  1: ClusterRequirementsRequestCpuOverCommitRatioEnum.CpuOneToOne,
+  2: ClusterRequirementsRequestCpuOverCommitRatioEnum.CpuOneToTwo,
+  4: ClusterRequirementsRequestCpuOverCommitRatioEnum.CpuOneToFour,
+  6: ClusterRequirementsRequestCpuOverCommitRatioEnum.CpuOneToSix,
 };
 
 /**
- * Helper function to convert numeric over-commit ratio to API enum format
+ * Mapping from numeric memory over-commit ratio to API enum value
  */
-export const overcommitRatioToApiEnum = (
+const MEMORY_OVERCOMMIT_RATIO_MAP: Record<
+  MemoryOvercommitRatio,
+  ClusterRequirementsRequest["memoryOverCommitRatio"]
+> = {
+  1: ClusterRequirementsRequestMemoryOverCommitRatioEnum.MemoryOneToOne,
+  2: ClusterRequirementsRequestMemoryOverCommitRatioEnum.MemoryOneToTwo,
+  4: ClusterRequirementsRequestMemoryOverCommitRatioEnum.MemoryOneToFour,
+};
+
+/**
+ * Convert numeric CPU over-commit ratio to API enum format
+ */
+export const cpuOvercommitRatioToApiEnum = (
   ratio: OvercommitRatio,
-): ClusterRequirementsRequest["overCommitRatio"] => {
-  return OVERCOMMIT_RATIO_MAP[ratio];
+): ClusterRequirementsRequest["cpuOverCommitRatio"] => {
+  return CPU_OVERCOMMIT_RATIO_MAP[ratio];
+};
+
+/**
+ * Convert numeric memory over-commit ratio to API enum format
+ */
+export const memoryOvercommitRatioToApiEnum = (
+  ratio: MemoryOvercommitRatio,
+): ClusterRequirementsRequest["memoryOverCommitRatio"] => {
+  return MEMORY_OVERCOMMIT_RATIO_MAP[ratio];
 };
 
 /**
@@ -93,7 +123,10 @@ export const formValuesToRequest = (
   workerMemory: number,
 ): ClusterRequirementsRequest => ({
   clusterId,
-  overCommitRatio: overcommitRatioToApiEnum(values.overcommitRatio),
+  cpuOverCommitRatio: cpuOvercommitRatioToApiEnum(values.cpuOvercommitRatio),
+  memoryOverCommitRatio: memoryOvercommitRatioToApiEnum(
+    values.memoryOvercommitRatio,
+  ),
   workerNodeCPU: workerCpu,
   workerNodeMemory: workerMemory,
   controlPlaneSchedulable: values.scheduleOnControlPlane,

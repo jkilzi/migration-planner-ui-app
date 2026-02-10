@@ -16,7 +16,7 @@ import {
 import { CopyIcon } from "@patternfly/react-icons";
 import React, { useCallback, useMemo } from "react";
 
-import { OVERCOMMIT_OPTIONS } from "./constants";
+import { CPU_OVERCOMMIT_OPTIONS, MEMORY_OVERCOMMIT_OPTIONS } from "./constants";
 import type { ClusterRequirementsResponse, SizingFormValues } from "./types";
 
 const DISCLAIMER_TEXT =
@@ -41,10 +41,18 @@ const formatNumber = (value: number): string => value.toLocaleString();
 const formatRatio = (value: number): string => value.toFixed(2);
 
 /**
- * Get the over-commit ratio label
+ * Get the CPU over-commit ratio label
  */
-const getOvercommitLabel = (ratio: number): string => {
-  const option = OVERCOMMIT_OPTIONS.find((opt) => opt.value === ratio);
+const getCpuOvercommitLabel = (ratio: number): string => {
+  const option = CPU_OVERCOMMIT_OPTIONS.find((opt) => opt.value === ratio);
+  return option?.label || `1:${ratio}`;
+};
+
+/**
+ * Get the memory over-commit ratio label
+ */
+const getMemoryOvercommitLabel = (ratio: number): string => {
+  const option = MEMORY_OVERCOMMIT_OPTIONS.find((opt) => opt.value === ratio);
   return option?.label || `1:${ratio}`;
 };
 
@@ -70,7 +78,7 @@ Node Size: ${formValues.customCpu} CPU / ${formValues.customMemoryGb} GB
 
 Additional info
 Target Platform: BareMetal
-Over-Commitment: ${getOvercommitLabel(formValues.overcommitRatio)}
+Over-Commitment: CPU ${getCpuOvercommitLabel(formValues.cpuOvercommitRatio)}, Memory ${getMemoryOvercommitLabel(formValues.memoryOvercommitRatio)}
 VMs to Migrate: ${formatNumber(output.inventoryTotals.totalVMs)} VMs
 - CPU Over-Commit Ratio: ${formatRatio(cpuOverCommitRatio)}
 - Memory Over-Commit Ratio: ${formatRatio(memoryOverCommitRatio)}
@@ -227,8 +235,9 @@ export const SizingResult: React.FC<SizingResultProps> = ({
                 </Content>
                 <Content>Target Platform: BareMetal</Content>
                 <Content>
-                  Over-Commitment:{" "}
-                  {getOvercommitLabel(formValues.overcommitRatio)}
+                  Over-Commitment: CPU{" "}
+                  {getCpuOvercommitLabel(formValues.cpuOvercommitRatio)}, Memory{" "}
+                  {getMemoryOvercommitLabel(formValues.memoryOvercommitRatio)}
                 </Content>
                 <Content>
                   VMs to Migrate:{" "}

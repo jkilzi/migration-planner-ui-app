@@ -49,10 +49,10 @@ export const generateMockClusterRequirements = (
     totalMemory: inventoryMemory,
   } = MOCK_INVENTORY;
 
-  // Calculate worker nodes needed based on CPU requirements and overcommit ratio
+  // Calculate worker nodes needed based on CPU requirements and CPU overcommit ratio
   const workerNodes = Math.max(
     3,
-    Math.ceil(inventoryCPU / (workerCpu * values.overcommitRatio)),
+    Math.ceil(inventoryCPU / (workerCpu * values.cpuOvercommitRatio)),
   );
   const controlPlaneNodes = values.haReplicas;
   const totalNodes = workerNodes + controlPlaneNodes;
@@ -82,8 +82,8 @@ export const generateMockClusterRequirements = (
       cpu: cpuUsage,
       memory: memoryUsage,
       limits: {
-        cpu: inventoryCPU * values.overcommitRatio,
-        memory: inventoryMemory * values.overcommitRatio,
+        cpu: inventoryCPU * values.cpuOvercommitRatio,
+        memory: inventoryMemory * values.memoryOvercommitRatio,
       },
       overCommitRatio: {
         cpu: inventoryCPU / totalCPU,

@@ -12,9 +12,18 @@ import {
 } from "@patternfly/react-core";
 import React from "react";
 
-import { CPU_OPTIONS, MEMORY_OPTIONS, OVERCOMMIT_OPTIONS } from "./constants";
+import {
+  CPU_OPTIONS,
+  CPU_OVERCOMMIT_OPTIONS,
+  MEMORY_OPTIONS,
+  MEMORY_OVERCOMMIT_OPTIONS,
+} from "./constants";
 import PopoverIcon from "./PopoverIcon";
-import type { OvercommitRatio, SizingFormValues } from "./types";
+import type {
+  MemoryOvercommitRatio,
+  OvercommitRatio,
+  SizingFormValues,
+} from "./types";
 
 interface SizingInputFormProps {
   values: SizingFormValues;
@@ -54,13 +63,23 @@ export const SizingInputForm: React.FC<SizingInputFormProps> = ({
     });
   };
 
-  const handleOvercommitChange = (
+  const handleCpuOvercommitChange = (
     _event: React.FormEvent<HTMLSelectElement>,
     ratio: string,
   ): void => {
     onChange({
       ...values,
-      overcommitRatio: parseInt(ratio, 10) as OvercommitRatio,
+      cpuOvercommitRatio: parseInt(ratio, 10) as OvercommitRatio,
+    });
+  };
+
+  const handleMemoryOvercommitChange = (
+    _event: React.FormEvent<HTMLSelectElement>,
+    ratio: string,
+  ): void => {
+    onChange({
+      ...values,
+      memoryOvercommitRatio: parseInt(ratio, 10) as MemoryOvercommitRatio,
     });
   };
 
@@ -145,27 +164,58 @@ export const SizingInputForm: React.FC<SizingInputFormProps> = ({
               </FormGroup>
             </StackItem>
 
-            {/* Overcommitment (CPU & memory) */}
+            {/* CPU overcommitment */}
             <StackItem>
               <FormGroup
-                label="Overcommitment (CPU & memory)"
+                label="CPU overcommitment"
                 isRequired
-                fieldId="overcommit-ratio"
+                fieldId="cpu-overcommit-ratio"
                 labelHelp={
                   <PopoverIcon
                     noVerticalAlign
-                    headerContent="Overcommitment (CPU & memory)"
-                    bodyContent="The ratio of virtual resources to physical resources. Higher ratios allow more VMs but may impact performance if all VMs peak at once. Example: At 1:4, you can run 400 virtual CPUs on 100 physical cores."
+                    headerContent="CPU overcommitment"
+                    bodyContent="The ratio of virtual CPUs to physical cores. Higher ratios allow more VMs but may impact performance if all VMs peak at once. Example: At 1:4, you can run 400 virtual CPUs on 100 physical cores."
                   />
                 }
               >
                 <FormSelect
-                  id="overcommit-ratio"
-                  value={String(values.overcommitRatio)}
-                  onChange={handleOvercommitChange}
-                  aria-label="Overcommitment ratio"
+                  id="cpu-overcommit-ratio"
+                  value={String(values.cpuOvercommitRatio)}
+                  onChange={handleCpuOvercommitChange}
+                  aria-label="CPU overcommitment ratio"
                 >
-                  {OVERCOMMIT_OPTIONS.map((option) => (
+                  {CPU_OVERCOMMIT_OPTIONS.map((option) => (
+                    <FormSelectOption
+                      key={option.value}
+                      value={String(option.value)}
+                      label={option.label}
+                    />
+                  ))}
+                </FormSelect>
+              </FormGroup>
+            </StackItem>
+
+            {/* Memory overcommitment */}
+            <StackItem>
+              <FormGroup
+                label="Memory overcommitment"
+                isRequired
+                fieldId="memory-overcommit-ratio"
+                labelHelp={
+                  <PopoverIcon
+                    noVerticalAlign
+                    headerContent="Memory overcommitment"
+                    bodyContent="The ratio of virtual memory to physical memory. Higher ratios allow more VMs; memory overcommit is typically more conservative than CPU (max 1:4)."
+                  />
+                }
+              >
+                <FormSelect
+                  id="memory-overcommit-ratio"
+                  value={String(values.memoryOvercommitRatio)}
+                  onChange={handleMemoryOvercommitChange}
+                  aria-label="Memory overcommitment ratio"
+                >
+                  {MEMORY_OVERCOMMIT_OPTIONS.map((option) => (
                     <FormSelectOption
                       key={option.value}
                       value={String(option.value)}
