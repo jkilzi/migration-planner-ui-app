@@ -464,6 +464,7 @@ export const CreateAssessmentModal: React.FC<CreateAssessmentModalProps> = ({
                     onChange={(_event, checked) => {
                       setRvtoolsConsentChecked(Boolean(checked));
                     }}
+                    isRequired
                   />
                 </div>
               )}
