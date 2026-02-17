@@ -146,8 +146,9 @@ export const Provider: React.FC<PropsWithChildren> = (props) => {
     Source[]
   > => {
     const sources = await sourceApi.listSources();
-    return sources;
-  }, []);
+    // Always return a new array reference to trigger React updates
+    return [...sources];
+  }, [sourceApi]);
 
   function normalizeAssessmentsResponse(response: unknown): Assessment[] {
     if (Array.isArray(response)) {
