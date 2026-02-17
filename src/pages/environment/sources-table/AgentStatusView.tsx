@@ -13,12 +13,15 @@ import {
   DisconnectedIcon,
   ExclamationCircleIcon,
   InfoCircleIcon,
+  QuestionCircleIcon,
 } from "@patternfly/react-icons";
 import { t_global_color_status_success_default as globalSuccessColor100 } from "@patternfly/react-tokens/dist/js/t_global_color_status_success_default";
 import { t_global_icon_color_status_danger_default as globalDangerColor200 } from "@patternfly/react-tokens/dist/js/t_global_icon_color_status_danger_default";
 import { t_global_icon_color_status_info_default as globalInfoColor100 } from "@patternfly/react-tokens/dist/js/t_global_icon_color_status_info_default";
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
+
+import { VCenterSetupInstructions } from "../../../components/VCenterSetupInstructions";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AgentStatusView {
@@ -133,6 +136,7 @@ export const AgentStatusView: React.FC<AgentStatusView.Props> = (props) => {
 
   const hasStatusInfo = !!(statusInfo && String(statusInfo).trim());
   const isWaitingForCredentials = status === "waiting-for-credentials";
+  const isNotConnected = status === "not-connected" && !uploadedManually;
 
   return (
     <Split hasGutter style={{ gap: "0.66rem" }}>
@@ -171,6 +175,27 @@ export const AgentStatusView: React.FC<AgentStatusView.Props> = (props) => {
           statusView && statusView.text
         )}
       </SplitItem>
+      {isNotConnected && (
+        <SplitItem>
+          <Popover
+            aria-label="Setup instructions"
+            headerContent="Setup instructions"
+            headerComponent="h2"
+            bodyContent={<VCenterSetupInstructions />}
+            minWidth="600px"
+          >
+            <Button
+              variant="plain"
+              aria-label="More info for not connected status"
+              style={{ padding: 0, minWidth: "auto" }}
+            >
+              <Icon isInline>
+                <QuestionCircleIcon color={globalInfoColor100.value} />
+              </Icon>
+            </Button>
+          </Popover>
+        </SplitItem>
+      )}
     </Split>
   );
 };

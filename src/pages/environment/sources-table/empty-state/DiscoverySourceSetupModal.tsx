@@ -5,6 +5,7 @@ import {
   ClipboardCopy,
   clipboardCopyFunc,
   Content,
+  ContentVariants,
   Form,
   FormGroup,
   FormHelperText,
@@ -15,11 +16,14 @@ import {
   ModalFooter /* data-codemods */,
   ModalHeader /* data-codemods */,
   Radio,
+  Stack,
+  StackItem,
   TextArea,
   TextInput,
 } from "@patternfly/react-core";
 import React, { useCallback, useEffect, useState } from "react";
 
+import { VCenterSetupInstructions } from "../../../../components/VCenterSetupInstructions";
 import { useDiscoverySources } from "../../../../migration-wizard/contexts/discovery-sources/Context";
 
 export interface DiscoverySourceSetupModalProps {
@@ -815,20 +819,37 @@ export const DiscoverySourceSetupModal: React.FC<
             </>
           )}
           {showUrl && (
-            <Content>
-              <b>Ova Download URL</b>
-              <ClipboardCopy
-                isReadOnly
-                onCopy={(event) => clipboardCopyFunc(event, generatedUrl)}
-              >
-                {generatedUrl}
-              </ClipboardCopy>
-              <Alert
-                isInline
-                variant="info"
-                title="Never share your downloaded ISO with anyone else. Forwarding it might put your credentials and personal data at risk."
-              />
-            </Content>
+            <Stack hasGutter>
+              <StackItem>
+                <Alert isInline variant="success" title="Instructions">
+                  <VCenterSetupInstructions />
+                </Alert>
+              </StackItem>
+              <StackItem>
+                <Content key="Ova Download URL" component={ContentVariants.dt}>
+                  Ova Download URL
+                </Content>
+
+                <Content
+                  key={`dd-Ova Download URL`}
+                  component={ContentVariants.dd}
+                >
+                  <ClipboardCopy
+                    isReadOnly
+                    onCopy={(event) => clipboardCopyFunc(event, generatedUrl)}
+                  >
+                    {generatedUrl}
+                  </ClipboardCopy>
+                </Content>
+              </StackItem>
+              <StackItem>
+                <Alert
+                  isInline
+                  variant="info"
+                  title="Never share your downloaded ISO with anyone else. Forwarding it might put your credentials and personal data at risk."
+                />
+              </StackItem>
+            </Stack>
           )}
         </Form>
         {proxyGroupError && (
